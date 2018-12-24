@@ -1,11 +1,11 @@
 package com.wangzhixuan.controller;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import cn.sdkd.ccse.jsqles.model.Schoolyearterm;
 import cn.sdkd.ccse.jsqles.model.SchoolyeartermVO;
 import cn.sdkd.ccse.jsqles.service.ISchoolyeartermService;
+import com.wangzhixuan.commons.base.BaseController;
+import com.wangzhixuan.commons.csrf.CsrfToken;
+import com.wangzhixuan.commons.shiro.captcha.DreamCaptcha;
+import com.wangzhixuan.commons.utils.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.DisabledAccountException;
 import org.apache.shiro.authc.IncorrectCredentialsException;
@@ -20,10 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.wangzhixuan.commons.base.BaseController;
-import com.wangzhixuan.commons.csrf.CsrfToken;
-import com.wangzhixuan.commons.shiro.captcha.DreamCaptcha;
-import com.wangzhixuan.commons.utils.StringUtils;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @description：登录退出

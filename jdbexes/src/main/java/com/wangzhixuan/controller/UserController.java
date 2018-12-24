@@ -1,16 +1,15 @@
 package com.wangzhixuan.controller;
 
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.validation.Valid;
-
-import cn.sdkd.ccse.commons.utils.ImportExcelUtil;
+import com.wangzhixuan.commons.base.BaseController;
+import com.wangzhixuan.commons.result.PageInfo;
+import com.wangzhixuan.commons.shiro.PasswordHash;
+import com.wangzhixuan.commons.utils.StringUtils;
 import com.wangzhixuan.model.Organization;
+import com.wangzhixuan.model.Role;
+import com.wangzhixuan.model.User;
+import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IOrganizationService;
+import com.wangzhixuan.service.IUserService;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -20,15 +19,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.wangzhixuan.commons.base.BaseController;
-import com.wangzhixuan.commons.result.PageInfo;
-import com.wangzhixuan.commons.shiro.PasswordHash;
-import com.wangzhixuan.commons.utils.StringUtils;
-import com.wangzhixuan.model.Role;
-import com.wangzhixuan.model.User;
-import com.wangzhixuan.model.vo.UserVo;
-import com.wangzhixuan.service.IUserService;
-import org.springframework.web.multipart.MultipartFile;
+import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @description：用户管理
