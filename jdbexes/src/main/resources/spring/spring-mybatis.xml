@@ -39,7 +39,7 @@
         <!-- 自动扫描Mapping.xml文件 -->
         <property name="mapperLocations" value="classpath*:/sqlMapperXml/*.xml"></property>
         <property name="configLocation" value="classpath:xml/mybatis-config.xml"></property>
-        <property name="typeAliasesPackage" value="com.wangzhixuan.model; cn.sdkd.ccse.jsqles.model"/>
+        <property name="typeAliasesPackage" value="com.wangzhixuan.model; cn.sdkd.ccse.jsqles.model; cn.sdkd.ccse.jdbexes.model"/>
         <property name="globalConfig" ref="globalConfig"/>
         <property name="plugins">
             <array>
@@ -61,7 +61,7 @@
     <!-- MyBatis 动态实现  -->
     <bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
         <!-- 对Dao 接口动态实现，需要知道接口在哪  -->
-        <property name="basePackage" value="com.wangzhixuan.mapper; cn.sdkd.ccse.jsqles.mapper"/>
+        <property name="basePackage" value="com.wangzhixuan.mapper; cn.sdkd.ccse.jsqles.mapper; cn.sdkd.ccse.jdbexes.mapper"/>
     </bean>
 
     <!-- 事务管理 -->
