@@ -1,6 +1,7 @@
 package cn.sdkd.ccse.jdbexes.service;
 
 import cn.sdkd.ccse.jdbexes.model.Experiment;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import com.baomidou.mybatisplus.service.IService;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.commons.result.Tree;
@@ -12,12 +13,13 @@ import java.util.List;
  * Examination 表数据服务层接口
  *
  */
-public interface IExperimentService extends IService<Experiment> {
+public interface IExperimentStuService extends IService<ExperimentStu> {
 
-    void selectDataGrid(PageInfo pageInfo);
-    void unSelectedDataGrid(PageInfo pageInfo, Long userid);
+    void selectDataGridByUser(PageInfo pageInfo, Long userid);
 
-    List<Experiment> selectAll();
+    List<ExperimentStu> selectAll();
+
+    void insert(Long userid, String expnos);
 
     List<Tree> selectTree();
     /**

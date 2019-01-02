@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Sam on 2017/7/13.
@@ -40,6 +41,14 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
 
         pageInfo.setRows(page.getRecords());
         pageInfo.setTotal(page.getTotal());
+    }
+
+    @Override
+    public void unSelectedDataGrid(PageInfo pageInfo, Long userid) {
+        List<Map<String, Object>> list = experimentMapper.unSelectedDataGrid(pageInfo, userid);
+
+        pageInfo.setRows(list);
+        pageInfo.setTotal(list.size());
     }
 
     @Override

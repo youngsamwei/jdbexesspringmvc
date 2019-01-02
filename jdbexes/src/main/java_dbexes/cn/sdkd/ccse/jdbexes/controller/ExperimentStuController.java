@@ -1,7 +1,9 @@
 package cn.sdkd.ccse.jdbexes.controller;
 
 import cn.sdkd.ccse.jdbexes.model.Experiment;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import cn.sdkd.ccse.jdbexes.service.IExperimentService;
+import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +15,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.validation.Valid;
-import java.util.List;
 
 
 @Controller
-@RequestMapping("/dbexp")
-public class DBExpController extends BaseController {
+@RequestMapping("/dbexperiment_stu")
+public class ExperimentStuController extends BaseController {
+
+    @Autowired
+    private IExperimentStuService experimentStuService;
 
     @Autowired
     private IExperimentService experimentService;
@@ -30,7 +34,7 @@ public class DBExpController extends BaseController {
      */
     @GetMapping("/manager")
     public String manager() {
-        return "jdbexes_admin/experiment/experiment";
+        return "jdbexes/experiment/experiment_stu";
     }
 
     /**
@@ -40,7 +44,7 @@ public class DBExpController extends BaseController {
      */
     @GetMapping("/addPage")
     public String addPage() {
-        return "jdbexes_admin/experiment/experimentAdd";
+        return "jdbexes/experiment/experiment_stuAdd";
     }
 
     /**
@@ -52,21 +56,21 @@ public class DBExpController extends BaseController {
      */
     @RequestMapping("/editPage")
     public String editPage(Model model, Long id) {
-        Experiment experiment = experimentService.selectById(id);
-        model.addAttribute("experiment", experiment);
-        return "jdbexes_admin/experiment/experimentEdit";
+        ExperimentStu experimentStu = experimentStuService.selectById(id);
+        model.addAttribute("experimentStu", experimentStu);
+        return "jdbexes/experiment/experiment_stuEdit";
     }
 
     /**
-     * 添加实验
+     * 添加实验选择
      *
-     * @param experiment
+     * @param expnos
      * @return
      */
     @PostMapping("/add")
     @ResponseBody
-    public Object add(@Valid Experiment experiment) {
-        experimentService.insert(experiment);
+    public Object add(String expnos) {
+        experimentStuService.insert(getUserId(), expnos);
         return renderSuccess("添加成功！");
     }
 
@@ -79,20 +83,21 @@ public class DBExpController extends BaseController {
     @RequestMapping("/delete")
     @ResponseBody
     public Object delete(Long id) {
-        experimentService.deleteById(id);
+        experimentStuService.deleteById(id);
+        experimentService.refreshCache();
         return renderSuccess("删除成功！");
     }
 
     /**
      * 更新
      *
-     * @param experiment
+     * @param experimentStu
      * @return
      */
     @RequestMapping("/edit")
     @ResponseBody
-    public Object edit(@Valid Experiment experiment) {
-        experimentService.updateById(experiment);
+    public Object edit(@Valid ExperimentStu experimentStu) {
+        experimentStuService.updateById(experimentStu);
         return renderSuccess("编辑成功！");
     }
 
@@ -109,22 +114,14 @@ public class DBExpController extends BaseController {
     @ResponseBody
     public Object dataGrid(Integer page, Integer rows, String sort, String order) {
         PageInfo pageInfo = new PageInfo(page, rows, sort, order);
-        experimentService.selectDataGrid(pageInfo);
-        return pageInfo;
-    }
-
-    @PostMapping("/unSelectedDataGrid")
-    @ResponseBody
-    public Object unSelectedDataGrid(Integer page, Integer rows, String sort, String order) {
-        PageInfo pageInfo = new PageInfo(page, rows, sort, order);
-        experimentService.unSelectedDataGrid(pageInfo, getUserId());
+        experimentStuService.selectDataGridByUser(pageInfo, getUserId());
         return pageInfo;
     }
 
     @PostMapping(value = "/tree")
     @ResponseBody
     public Object tree() {
-        return experimentService.selectTree();
+        return experimentStuService.selectTree();
     }
 
 }
