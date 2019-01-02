@@ -113,4 +113,10 @@ public class DBExpController extends BaseController {
         return pageInfo;
     }
 
+    @PostMapping(value = "/tree")
+    @ResponseBody
+    public Object tree() {
+        return experimentService.selectTree();
+    }
+
 }

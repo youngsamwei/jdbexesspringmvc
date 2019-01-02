@@ -32,9 +32,12 @@
             <table class="grid">
                 <tr>
                     <td>实验名称</td>
-                    <td><input name="expname" type="text" placeholder="请输入实验名称" class="easyui-validatebox span2" data-options="required:true" value=""></td>
+                    <td><input name="expname" type="text" placeholder="请输入实验名称" class="easyui-validatebox span2" style="width: 300px; height: 20px;" data-options="required:true" value=""></td>
                 </tr>
-
+                <tr>
+                    <td>编译目标</td>
+                    <td><input name="testtarget" type="text" placeholder="请输入编译目标" class="easyui-validatebox span2" style="width: 300px; height: 20px;"  data-options="required:true" value=""></td>
+                </tr>
                 <tr>
                     <td>状态</td>
                     <td >

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.sdkd.ccse.jsqles.mapper.ExperimentMapper">
+<mapper namespace="cn.sdkd.ccse.jdbexes.mapper.ExperimentMapper">
     <cache     />
 
     <!-- 通用查询结果列-->
     <sql id="Base_Column_List">
-        EXAMID, EXAMNAME, is_Open as isOpen
+        expno, examname, is_Open as isOpen
     </sql>
 
     <resultMap id="experiment" type="Experiment">

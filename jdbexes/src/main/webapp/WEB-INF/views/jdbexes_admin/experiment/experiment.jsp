@@ -24,7 +24,12 @@
                 title : '名称',
                 field : 'expname',
                 sortable : true
-            } ,  {
+            } , {
+               width : '400',
+               title : '编译目标',
+               field : 'testtarget',
+               sortable : true
+             } ,  {
                 width : '60',
                 title : '状态',
                 field : 'isOpen',

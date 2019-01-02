@@ -12,6 +12,8 @@ public class Experiment implements java.io.Serializable {
 	@TableId
 	private Long expno;
 	private String expname;
+
+	private String testtarget;
 	private Short isOpen;
 
 	// Constructors
@@ -57,5 +59,13 @@ public class Experiment implements java.io.Serializable {
 		this.isOpen = isOpen;
 	}
 
+
+	public String getTesttarget() {
+		return testtarget;
+	}
+
+	public void setTesttarget(String testtarget) {
+		this.testtarget = testtarget;
+	}
 
 }
