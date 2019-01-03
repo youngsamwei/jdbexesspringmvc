@@ -61,6 +61,15 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
     }
 
     @Override
+    public void experimentFilesDataGridByUser(PageInfo pageInfo, Long userid, Long expstuno) {
+
+        List<Map<String, Object>> list = experimentStuMapper.experimentFilesDataGridByUser(pageInfo, userid, expstuno);
+
+        pageInfo.setRows(list);
+        pageInfo.setTotal(list.size());
+    }
+
+    @Override
     public List<Tree> selectTree() {
         List<ExperimentStu> experimentList = selectAll();
 

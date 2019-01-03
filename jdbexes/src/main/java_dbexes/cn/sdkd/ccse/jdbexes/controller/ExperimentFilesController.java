@@ -5,6 +5,7 @@ import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFiles;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentService;
+import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,10 @@ public class ExperimentFilesController extends BaseController {
     private IExperimentFilesService experimentFilesService;
     @Autowired
     private IExperimentService experimentService;
+
+    @Autowired
+    private IExperimentStuService experimentStuService;
+
     /**
      * 权限管理页
      *
@@ -84,6 +89,7 @@ public class ExperimentFilesController extends BaseController {
     @ResponseBody
     public Object add(@Valid ExperimentFiles experimentFiles) {
         experimentFilesService.insert(experimentFiles);
+        experimentStuService.refreshCache();
         return renderSuccess("添加成功！");
     }
 
@@ -97,6 +103,7 @@ public class ExperimentFilesController extends BaseController {
     @ResponseBody
     public Object delete(Long id) {
         experimentFilesService.deleteById(id);
+        experimentStuService.refreshCache();
         return renderSuccess("删除成功！");
     }
 
@@ -125,6 +132,7 @@ public class ExperimentFilesController extends BaseController {
     public Object edit(@Valid ExperimentFiles experimentFiles) {
 
         experimentFilesService.updateById(experimentFiles);
+        experimentStuService.refreshCache();
         return renderSuccess("编辑成功！");
     }
 

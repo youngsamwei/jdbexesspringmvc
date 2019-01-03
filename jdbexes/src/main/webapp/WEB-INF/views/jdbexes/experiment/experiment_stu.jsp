@@ -61,7 +61,7 @@
         parent.$.modalDialog({
             title : '选择实验',
             width : 700,
-            height : 500,
+            height : 600,
             href : '${path }/dbexperiment_stu/addPage',
             buttons : [ {
                 text : '确定',
@@ -82,15 +82,15 @@
             experiment_stuDataGrid.datagrid('unselectAll').datagrid('uncheckAll');
         }
         parent.$.modalDialog({
-            title : '提交文件',
-            width : 500,
-            height : 300,
-            href : '${path }/dbexperiment_stu/editPage?id=' + id,
+            title : '上传文件',
+            width : 600,
+            height : 500,
+            href : '${path }/dbexperiment_stu/submitFilePage?expstuno=' + id,
             buttons : [ {
-                text : '确定',
+                text : '上传文件并开始测试',
                 handler : function() {
                     parent.$.modalDialog.openner_dataGrid = experiment_stuDataGrid;//因为添加成功之后，需要刷新这个dataGrid，所以先预定义好
-                    var f = parent.$.modalDialog.handler.find('#experiment_stuEditForm');
+                    var f = parent.$.modalDialog.handler.find('#experiment_stuSubmitForm');
                     f.submit();
                 }
             } ]

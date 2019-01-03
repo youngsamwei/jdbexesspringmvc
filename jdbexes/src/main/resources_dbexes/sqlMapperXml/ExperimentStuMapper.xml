@@ -21,6 +21,16 @@
 
     </select>
 
+    <select id="experimentFilesDataGridByUser" resultType="Map">
+        select efs.expfilestuno, ef.srcfilename, efs.submittime
+        from experiment_stu es join experiment e on es.expno = e.expno
+        join experiment_files ef on ef.expno = e.expno
+        left outer join experiment_files_stu efs on efs.expfilesno = ef.fileno
+        where es.stuno = #{stuno} and es.expstuno = #{expstuno}
+
+
+    </select>
+
     <update id="refreshCache" flushCache="true">
         select 1
     </update>

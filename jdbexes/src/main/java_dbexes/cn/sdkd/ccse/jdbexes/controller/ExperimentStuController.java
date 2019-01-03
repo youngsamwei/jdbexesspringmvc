@@ -61,6 +61,13 @@ public class ExperimentStuController extends BaseController {
         return "jdbexes/experiment/experiment_stuEdit";
     }
 
+    @RequestMapping("/submitFilePage")
+    public String submitFilePage(Model model, Long expstuno) {
+//        ExperimentStu experimentStu = experimentStuService.selectById(expstuno);
+        model.addAttribute("expstuno", expstuno);
+        return "jdbexes/experiment/experiment_stuSubmit";
+    }
+
     /**
      * 添加实验选择
      *
@@ -115,6 +122,14 @@ public class ExperimentStuController extends BaseController {
     public Object dataGrid(Integer page, Integer rows, String sort, String order) {
         PageInfo pageInfo = new PageInfo(page, rows, sort, order);
         experimentStuService.selectDataGridByUser(pageInfo, getUserId());
+        return pageInfo;
+    }
+
+    @RequestMapping("/experimentFilesDataGrid")
+    @ResponseBody
+    public Object experimentFilesDataGrid(Integer page, Integer rows, String sort, String order, Long expstuno) {
+        PageInfo pageInfo = new PageInfo(page, rows, sort, order);
+        experimentStuService.experimentFilesDataGridByUser(pageInfo, getUserId(), expstuno);
         return pageInfo;
     }
 
