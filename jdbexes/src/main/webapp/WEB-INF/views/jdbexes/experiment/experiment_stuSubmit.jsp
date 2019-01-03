@@ -47,11 +47,12 @@
             onSubmit : function() {
                 progressLoad();
 
-
                 var isValid = $(this).form('validate');
                 if (!isValid) {
                     progressClose();
                 }
+
+                Upload();
 
                 return isValid;
             },
@@ -71,7 +72,16 @@
     });
 
 
+    /*取消*/
     function cancel_submit_files_experiment_stuFun(rowindex) {
+        var ds=$("#experiment_expstu_submitDataGrid").datagrid("getData");
+        var filename = ds.rows[rowindex].srcfilename.toLowerCase();
+        for(var j=0; j< uploadFiles.length; j++){
+            if(uploadFiles[j].name == filename){
+                uploadFiles.splice(j, 1);
+                break;
+            }
+        }
         $("#experiment_expstu_submitDataGrid").datagrid("updateRow",{
                 index: parseInt(rowindex),
                 row:{
@@ -80,11 +90,10 @@
                         status : 0
                 }
         });
-
     }
 
     var uploadFiles = new Array();
-$(document).on({
+    $(document).on({
             dragleave:function(e){    //拖离
                 e.preventDefault();
             },
@@ -111,17 +120,10 @@ $(document).on({
             AddFiles(fileList);
         },false);
 
-function AddFiles(files){
+    function AddFiles(files){
         var errstr = "";
         for(var i=0; i< files.length; i++){
-            var filename = files[i].name;
-            var isfind = false;
-            for(var j=0; j< uploadFiles.length; j++){
-                if(uploadFiles[j].name == filename){
-                    isfind = true;
-                    break;
-                }
-            }
+            var filename = files[i].name.toLowerCase();
 
             var index1=filename.lastIndexOf(".");
             var index2=filename.length;
@@ -132,14 +134,19 @@ function AddFiles(files){
                 errstr += filename + "/";
                 continue;
             }
-            if(isfind == false){
+
+            for(var j=0; j< uploadFiles.length; j++){
+                if(uploadFiles[j].name == filename){
+                    uploadFiles.splice(j, 1);
+                    break;
+                }
+            }
+
+            var isInList =  updateDataGrid(files[i]);
+            if( isInList == 1){
                 uploadFiles.push(files[i]);
             }
-            updateDataGrid(files[i])
-        }
 
-        if(errstr != ""){
-            alert("文件格式错误:"+errstr);
         }
 
     }
@@ -160,30 +167,23 @@ function AddFiles(files){
                                 status : 1
                         }
                 });
-                break;
+                return 1;
 		    }
 		}
+		return -1;
     }
 
- function onc(){
-        var files = document.getElementById("file").files;
+    function Upload(){
 
-        if(files.length < 0){
-            return ;
-        }
-        AddFiles(files);
-    }
-function Upload(){
-/*
         AddFiles(new Array());
         if(uploadFiles.length <= 0){
-            Refresh();
+            //Refresh();
             return;
         }
 
         uploadcount = uploadFiles.length ;
 
-        var FileController = "SaveFile.php";                    // 接收上传文件的后台地址
+        var FileController = "${path }/dbexperiment_stu/uploadFile";                    // 接收上传文件的后台地址
         // FormData 对象
 
         var form = new FormData();
@@ -196,19 +196,20 @@ function Upload(){
         };
         xhr.send(form);
         uploadFiles.splice(0,1);
-        */
+
     }
 </script>
 <div class="easyui-layout" data-options="fit:true,border:false" >
     <div data-options="region:'center',border:false" style="overflow: hidden;padding: 3px;" >
         <table id="experiment_expstu_submitDataGrid" data-options="fit:true,border:false"></table>
 
-
         <form id="experiment_stuSubmitForm" method="post">
             <input name="expnos" id="expnos" type="hidden"  value="">
         </form>
     </div>
-    <div name="dropbox" id="dropbox" data-options="region:'south',border:false"  style="background-color:#888888; color:white; font-size:20px; height:120px;line-height:110px;border:3px dashed silver;text-align: center;display:block;">
-       拖拽文件到此处准备上传
+    <div name="dropbox" id="dropbox" data-options="region:'south',border:false"  style="background-color:#888888; color:white; font-size:20px; height:120px;line-height:50px;border:3px dashed silver;text-align: center;display:block;">
+       拖拽文件到此处准备上传<BR>
+       请拖拽c文件，且与上面列表中的文件名称一致
+
     </div>
 </div>

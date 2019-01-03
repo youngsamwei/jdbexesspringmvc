@@ -9,12 +9,14 @@ import com.wangzhixuan.commons.result.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 
 
 @Controller
@@ -131,6 +133,36 @@ public class ExperimentStuController extends BaseController {
         PageInfo pageInfo = new PageInfo(page, rows, sort, order);
         experimentStuService.experimentFilesDataGridByUser(pageInfo, getUserId(), expstuno);
         return pageInfo;
+    }
+
+    @PostMapping("/uploadFile")
+    @ResponseBody
+    public Object uploadFile(@RequestParam("file") MultipartFile file) {
+        logger.info(file.getOriginalFilename());
+
+        try {
+            // 默认以utf-8形式
+            String encode = "utf-8";
+            BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), encode));
+
+            String str = "";
+            while ((str = reader.readLine()) != null) {
+                logger.info(str);
+            }
+            return renderSuccess("上传成功！");
+        } catch (UnsupportedEncodingException e1) {
+            logger.error(e1);
+        } catch (IOException e) {
+            logger.error(e);
+        }
+
+        return renderError("上传失败！");
+    }
+
+    @PostMapping("/check")
+    @ResponseBody
+    public Object check() {
+        return renderSuccess("测试通过！");
     }
 
     @PostMapping(value = "/tree")
