@@ -213,12 +213,14 @@
 
         // XMLHttpRequest 对象
         var xhr = new XMLHttpRequest();
-        xhr.open("post", FileController, true);
+        xhr.open("post", FileController, false);
         xhr.onload = function () {
             Upload();
         };
-        xhr.send(form);
+
         uploadFiles.splice(0,1);
+        xhr.send(form);
+
     }
 </script>
 <div class="easyui-layout" data-options="fit:true,border:false" >

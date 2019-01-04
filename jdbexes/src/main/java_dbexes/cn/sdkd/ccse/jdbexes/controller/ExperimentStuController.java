@@ -177,6 +177,8 @@ public class ExperimentStuController extends BaseController {
     @PostMapping("/check")
     @ResponseBody
     public Object check() {
+
+        logger.info("开始测试代码.");
         return renderSuccess("测试通过！");
     }
 
