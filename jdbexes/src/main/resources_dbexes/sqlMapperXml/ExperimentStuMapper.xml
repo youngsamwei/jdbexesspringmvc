@@ -22,14 +22,14 @@
     </select>
 
     <select id="experimentFilesDataGridByUser" resultType="Map">
-        select efs.expfilestuno, ef.srcfilename, efs.submittime
+        select efs.expfilestuno, ef.srcfilename, efs.submittime, ef.fileno, es.expstuno
         from experiment_stu es join experiment e on es.expno = e.expno
         join experiment_files ef on ef.expno = e.expno
-        left outer join experiment_files_stu efs on efs.expfilesno = ef.fileno
+        left outer join experiment_files_stu_latest efs on efs.fileno = ef.fileno and efs.expstuno = es.expstuno
         where es.stuno = #{stuno} and es.expstuno = #{expstuno}
 
-
     </select>
+
 
     <update id="refreshCache" flushCache="true">
         select 1

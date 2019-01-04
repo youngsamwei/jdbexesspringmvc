@@ -1,7 +1,9 @@
 package cn.sdkd.ccse.jdbexes.controller;
 
 import cn.sdkd.ccse.jdbexes.model.Experiment;
+import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
+import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.wangzhixuan.commons.base.BaseController;
@@ -28,6 +30,9 @@ public class ExperimentStuController extends BaseController {
 
     @Autowired
     private IExperimentService experimentService;
+
+    @Autowired
+    private IExperimentFilesStuService experimentFilesStuService;
 
     /**
      * 实验管理页
@@ -137,7 +142,8 @@ public class ExperimentStuController extends BaseController {
 
     @PostMapping("/uploadFile")
     @ResponseBody
-    public Object uploadFile(@RequestParam("file") MultipartFile file) {
+    public Object uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("expstuno") Integer expstuno,
+                             @RequestParam("fileno") Integer fileno     ) {
         logger.info(file.getOriginalFilename());
 
         try {
@@ -145,10 +151,19 @@ public class ExperimentStuController extends BaseController {
             String encode = "utf-8";
             BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), encode));
 
+            ExperimentFilesStu efs = new ExperimentFilesStu();
+            efs.setExpstuno(expstuno);
+            efs.setFileno(fileno);
+
+            String content = "";
             String str = "";
             while ((str = reader.readLine()) != null) {
-                logger.info(str);
+                content = content + str;
             }
+            efs.setFile_content(content);
+
+            experimentFilesStuService.insert(efs);
+            experimentStuService.refreshCache();
             return renderSuccess("上传成功！");
         } catch (UnsupportedEncodingException e1) {
             logger.error(e1);

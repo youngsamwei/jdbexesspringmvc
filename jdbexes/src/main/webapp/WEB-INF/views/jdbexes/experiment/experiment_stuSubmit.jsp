@@ -19,9 +19,21 @@
                             field : 'srcfilename',
                             sortable : true
                         },{
-                            width : '100',
+                            width : '200',
                             title: '上传状态',
-                            field: 'desc'
+                            field: 'desc',
+                             formatter : function(value, row, index) {
+                             console.info(row);
+                                var str = '';
+                                if (value == '待上传'){
+                                    return value;
+                                } else if (row.submittime != null){
+                                    str = "上次上传时间:" + row.submittime;
+                                } else {
+                                    return '未上传';
+                                }
+                                return str;
+                             }
                          },{
                            width: '100',
                            title: '文件大小',
@@ -52,7 +64,12 @@
                     progressClose();
                 }
 
-                Upload();
+                if (uploadFiles.length <= 0){
+                    progressClose();
+                    return false;
+                } else {
+                    Upload();
+                }
 
                 return isValid;
             },
@@ -143,6 +160,7 @@
             }
 
             var isInList =  updateDataGrid(files[i]);
+
             if( isInList == 1){
                 uploadFiles.push(files[i]);
             }
@@ -167,6 +185,8 @@
                                 status : 1
                         }
                 });
+                afile.expstuno = info.rows[i].expstuno;
+                afile.fileno = info.rows[i].fileno;
                 return 1;
 		    }
 		}
@@ -188,6 +208,9 @@
 
         var form = new FormData();
         form.append("file", uploadFiles[0]);
+        form.append("expstuno", uploadFiles[0].expstuno);
+        form.append("fileno", uploadFiles[0].fileno);
+
         // XMLHttpRequest 对象
         var xhr = new XMLHttpRequest();
         xhr.open("post", FileController, true);
@@ -196,7 +219,6 @@
         };
         xhr.send(form);
         uploadFiles.splice(0,1);
-
     }
 </script>
 <div class="easyui-layout" data-options="fit:true,border:false" >

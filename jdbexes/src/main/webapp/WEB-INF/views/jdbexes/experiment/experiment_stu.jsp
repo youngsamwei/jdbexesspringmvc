@@ -83,7 +83,7 @@
         }
         parent.$.modalDialog({
             title : '上传文件',
-            width : 600,
+            width : 800,
             height : 500,
             href : '${path }/dbexperiment_stu/submitFilePage?expstuno=' + id,
             buttons : [ {

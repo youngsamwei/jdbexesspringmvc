@@ -23,6 +23,10 @@
 <%-- [扩展样式] --%>
 <link rel="stylesheet" type="text/css" href="${staticPath }/static/style/css/dreamlu.css?v=10" />
 <link rel="stylesheet" type="text/css" href="${staticPath }/static/foundation-icons/foundation-icons.css" />
+
+<%-- [utils] --%>
+<script type="text/javascript" src="${staticPath }/static/utils.js" charset="utf-8"></script>
+
 <script type="text/javascript">
     var basePath = "${staticPath }";
     window.UEDITOR_HOME_URL = "${staticPath }/static/ueditor/";
