@@ -4,7 +4,7 @@
     var  experiment_expstu_submitDataGrid;
     $(function() {
         experiment_expstu_submitDataGrid = $('#experiment_expstu_submitDataGrid').datagrid({
-                        url : '${path }/dbexperiment_stu/experimentFilesDataGrid?expstuno=${expstuno}',
+                        url : '${path }/dbexperiment_stu/experimentFilesDataGrid?expstuno=${experimentStu.expstuno}',
                         striped : true,
                         rownumbers : true,
                         pagination : true,
@@ -228,7 +228,7 @@
         <table id="experiment_expstu_submitDataGrid" data-options="fit:true,border:false"></table>
 
         <form id="experiment_stuSubmitForm" method="post">
-            <input name="expnos" id="expnos" type="hidden"  value="">
+            <input name="expno" id="expno" type="hidden"  value="${experimentStu.expno}">
         </form>
     </div>
     <div name="dropbox" id="dropbox" data-options="region:'south',border:false"  style="background-color:#888888; color:white; font-size:20px; height:120px;line-height:50px;border:3px dashed silver;text-align: center;display:block;">

@@ -4,6 +4,7 @@ import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.wangzhixuan.commons.result.PageInfo;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,9 @@ public interface ExperimentStuMapper extends BaseMapper<ExperimentStu> {
 
     List<Map<String, Object>> experimentFilesDataGridByUser(PageInfo pageInfo, @Param("stuno")Long stuno,
                                                             @Param("expstuno") Long expstuno);
+
+    @Select("select expstuno,expno,'' as expname, stuno,'' as stuname, selectedtime,`status` FROM experiment_stu e WHERE e.expstuno = #{expstuno}")
+    ExperimentStu selectById(@Param("expstuno") Long expstuno);
 
     boolean refreshCache();
 }

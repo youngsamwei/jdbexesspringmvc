@@ -70,6 +70,11 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
     }
 
     @Override
+    public ExperimentStu selectById(Long expstuno) {
+        return experimentStuMapper.selectById(expstuno);
+    }
+
+    @Override
     public List<Tree> selectTree() {
         List<ExperimentStu> experimentList = selectAll();
 

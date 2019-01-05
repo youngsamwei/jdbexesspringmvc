@@ -3,6 +3,7 @@ package cn.sdkd.ccse.jdbexes.controller;
 import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
+import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
@@ -33,6 +34,9 @@ public class ExperimentStuController extends BaseController {
 
     @Autowired
     private IExperimentFilesStuService experimentFilesStuService;
+
+    @Autowired
+    private ICheckMissionService checkMissionService;
 
     /**
      * 实验管理页
@@ -70,8 +74,8 @@ public class ExperimentStuController extends BaseController {
 
     @RequestMapping("/submitFilePage")
     public String submitFilePage(Model model, Long expstuno) {
-//        ExperimentStu experimentStu = experimentStuService.selectById(expstuno);
-        model.addAttribute("expstuno", expstuno);
+        ExperimentStu experimentStu = experimentStuService.selectById(expstuno);
+        model.addAttribute("experimentStu", experimentStu);
         return "jdbexes/experiment/experiment_stuSubmit";
     }
 
@@ -158,7 +162,7 @@ public class ExperimentStuController extends BaseController {
             String content = "";
             String str = "";
             while ((str = reader.readLine()) != null) {
-                content = content + str;
+                content = content + str + "\n";
             }
             efs.setFile_content(content);
 
@@ -176,9 +180,11 @@ public class ExperimentStuController extends BaseController {
 
     @PostMapping("/check")
     @ResponseBody
-    public Object check() {
+    public Object check(Long expno) {
 
         logger.info("开始测试代码.");
+        checkMissionService.submitJob(getUserId(), expno);
+
         return renderSuccess("测试通过！");
     }
 
