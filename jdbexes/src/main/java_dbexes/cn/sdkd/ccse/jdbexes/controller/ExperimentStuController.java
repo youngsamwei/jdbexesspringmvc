@@ -16,10 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 
 
 @Controller
@@ -77,6 +74,43 @@ public class ExperimentStuController extends BaseController {
         ExperimentStu experimentStu = experimentStuService.selectById(expstuno);
         model.addAttribute("experimentStu", experimentStu);
         return "jdbexes/experiment/experiment_stuSubmit";
+    }
+
+    @RequestMapping("/openTestLogPage")
+    public Object openTestLogPage(Model model, @RequestParam("expstuno") Long expstuno){
+        ExperimentStu es = experimentStuService.selectById(expstuno);
+        String logFile = checkMissionService.getLogRootDir() + "/" + es.getStuno() + "/" + es.getExpno() ;
+        if (es.getTeststatus() == 2){
+            logFile += "/build.log";
+        }else if ((es.getTeststatus() == 3) || (es.getTeststatus() == 4)||(es.getTeststatus() == 5)){
+            logFile += "/testcases.log";
+        }
+        String logText = "";
+        BufferedReader br= null;
+        try {
+            br  = new BufferedReader(new FileReader(logFile));
+            String line="";
+            while((line = br.readLine()) != null){
+                logText += line + "<BR>";
+            }
+            if(br != null) {
+                br.close();
+            }
+        } catch (FileNotFoundException e) {
+            logger.error(e);
+        } catch (IOException e) {
+            logger.error(e);
+        }finally {
+            if (br != null){
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    logger.error(e);
+                }
+            }
+        }
+        model.addAttribute("logText", logText);
+        return "jdbexes/experiment/experiment_stuOpenTestLog";
     }
 
     /**
@@ -148,7 +182,6 @@ public class ExperimentStuController extends BaseController {
     @ResponseBody
     public Object uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("expstuno") Integer expstuno,
                              @RequestParam("fileno") Integer fileno     ) {
-        logger.info(file.getOriginalFilename());
 
         try {
             // 默认以utf-8形式

@@ -34,6 +34,9 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     /*临时存放学生的测试项目根目录*/
     private String projectRootDir;
 
+    /*测试日志目录*/
+    private String logRootDir;
+
     @Autowired
     private IExperimentFilesStuService experimentFilesStuService;
     @Autowired
@@ -49,6 +52,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         this.submitFilesRootDir = props.getProperty("submitFilesRootDir");
         this.originalProjectRootDir = props.getProperty("originalProjectRootDir");
         this.projectRootDir = props.getProperty("projectRootDir");
+        this.logRootDir = props.getProperty("logRootDir");
     }
 
     /*提交检查作业任务的job，检查指定学号和实验的最新版本*/
@@ -56,8 +60,9 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     public void submitJob(Long stuno, Long expno) {
         String srcDir = this.submitFilesRootDir + stuno + "/" + expno + "/";
         String projectDir = this.projectRootDir + "/" + stuno + "-" + expno + "-" + UUID.randomUUID().toString() + "/";
+        String logDir = this.logRootDir + "/" + stuno + "/" + expno + "/";
 
-        CheckJob cj = new CheckJob(stuno, expno, experimentFilesStuService, experimentStuService, srcDir, projectDir, this.originalProjectRootDir);
+        CheckJob cj = new CheckJob(stuno, expno, experimentFilesStuService, experimentStuService, srcDir, projectDir, this.originalProjectRootDir, logDir);
 
         CheckJobThread cjt = new CheckJobThread(cj);
         /*以“学号_实验编号”作为key*/
@@ -79,6 +84,11 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
             }
         }
         logger.debug("移除" + tcount + "个已经结束的job.");
+    }
+
+    @Override
+    public String getLogRootDir() {
+        return this.logRootDir;
     }
 
     /**

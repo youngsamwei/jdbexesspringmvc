@@ -20,7 +20,7 @@ public interface ExperimentStuMapper extends BaseMapper<ExperimentStu> {
     List<Map<String, Object>> experimentFilesDataGridByUser(PageInfo pageInfo, @Param("stuno")Long stuno,
                                                             @Param("expstuno") Long expstuno);
 
-    @Select("select expstuno,expno,'' as expname, stuno,'' as stuname, selectedtime,`status` FROM experiment_stu e WHERE e.expstuno = #{expstuno}")
+    @Select("select expstuno,expno,'' as expname, stuno,'' as stuname, selectedtime,`status` , teststatus FROM experiment_stu e WHERE e.expstuno = #{expstuno}")
     ExperimentStu selectById(@Param("expstuno") Long expstuno);
 
     boolean updateStatusDesc(@Param("stuno")Long stuno,@Param("expno") Long expno, @Param("teststatus") Integer teststatus, @Param("testdesc") String testdesc);

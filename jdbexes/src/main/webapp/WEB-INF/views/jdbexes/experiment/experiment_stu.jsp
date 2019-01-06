@@ -20,10 +20,19 @@
                 field : 'expname',
                 sortable : true
             } ,  {
-                 width : '400',
+                 width : '200',
                  title : '测试描述',
                  field : 'testdesc',
-                 sortable : true
+                 sortable : true,
+                 formatter : function(value, row, index){
+                    var str=  "";
+                    if (row.teststatus >= 2){
+                        str = $.formatString("<a href='javascript:void(0)' onclick='open_test_log_experiment_stu_fun({0});' >{1}</a>", row.expstuno, value);
+                        return str;
+                    }else{
+                        return value;
+                    }
+                 }
              } , {
                 field : 'teststatus',
                 title : '操作',
@@ -49,6 +58,21 @@
             toolbar : '#experiment_stuToolbar'
         });
     });
+
+    function open_test_log_experiment_stu_fun(expstuno){
+        parent.$.modalDialog({
+                    title : '查看测试日志',
+                    width : 700,
+                    height : 600,
+                    href : '${path }/dbexperiment_stu/openTestLogPage?expstuno=' + expstuno,
+                    buttons : [ {
+                        text : '关闭',
+                        handler : function() {
+
+                        }
+                    } ]
+                });
+    }
 
     function addexperiment_stuFun() {
         parent.$.modalDialog({

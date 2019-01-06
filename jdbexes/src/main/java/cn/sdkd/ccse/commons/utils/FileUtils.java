@@ -54,10 +54,39 @@ public class FileUtils {
         BufferedReader br = new BufferedReader(new InputStreamReader(runtime.exec(cmd).getInputStream(), encode));
         while ((line = br.readLine()) != null) {
             bw.write(line);
+            bw.newLine();
         }
         br.close();
         bw.flush();
         bw.close();
+    }
+    public static int execCmdOutputVerify(String cmd, String successFlag, String failedFlag, String filename, String encode) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
+        BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+        String line, lastLine = "";
+        BufferedReader br = new BufferedReader(new InputStreamReader(runtime.exec(cmd).getInputStream(), encode));
+        long start  = System.currentTimeMillis();
+        while ((line = br.readLine()) != null) {
+            bw.write(line);
+            bw.newLine();
+            lastLine = line;
+
+            /*超时强制退出*/
+            if(System.currentTimeMillis() - start > 3000){
+                break;
+            }
+        }
+        br.close();
+        bw.flush();
+        bw.close();
+
+        if (lastLine.contains(successFlag)) {
+            return 0;
+        } else if (lastLine.contains(failedFlag)) {
+            return -1;
+        } else {
+            return -2;
+        }
     }
 
     public static void execCmdOutput(String cmd, final Log logger, String encode) throws IOException {

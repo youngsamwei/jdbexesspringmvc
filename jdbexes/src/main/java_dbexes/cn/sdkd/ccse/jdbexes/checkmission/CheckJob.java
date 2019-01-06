@@ -34,12 +34,14 @@ public class CheckJob implements Runnable {
 
     private String originalProjectRootDir;
 
+    private String logDir;
+
     private IExperimentFilesStuService experimentFilesStuService;
     private IExperimentStuService experimentStuService;
 
     private List<ExperimentFilesStuVO> experimentFilesStuVOList;
 
-    public CheckJob(Long stuno, Long expno, IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService, String srcDir, String projectDir, String originalProjectRootDir) {
+    public CheckJob(Long stuno, Long expno, IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService, String srcDir, String projectDir, String originalProjectRootDir, String logDir) {
         this.stuno = stuno;
         this.expno = expno;
         this.experimentFilesStuService = experimentFilesStuService;
@@ -51,6 +53,7 @@ public class CheckJob implements Runnable {
         this.srcDir = srcDir;
         this.projectDir = projectDir;
         this.originalProjectRootDir = originalProjectRootDir;
+        this.logDir = logDir;
         initDirs();
     }
 
@@ -62,6 +65,10 @@ public class CheckJob implements Runnable {
         File fProjectDir = new File(this.projectDir);
         if (!fProjectDir.exists()) {
             fProjectDir.mkdirs();
+        }
+        File fLogDir = new File(this.logDir);
+        if (!fLogDir.exists()) {
+            fLogDir.mkdirs();
         }
     }
 
@@ -141,7 +148,7 @@ public class CheckJob implements Runnable {
             try {
                 /*第三步：refresh*/
                 experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在刷新项目..");
-                FileUtils.execCmdOutput(this.projectDir + "/cmd/refresh.bat", logger, "utf8");
+                FileUtils.execCmdOutput(this.projectDir + "/cmd/refresh.bat", this.logDir + "refresh.log", "utf8");
                 passed = true;
             } catch (IOException e) {
                 logger.error(e.getMessage());
@@ -165,7 +172,7 @@ public class CheckJob implements Runnable {
             try {
             /*第五步：build*/
                 experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在编译项目..");
-                FileUtils.execCmdOutput(this.projectDir + "/cmd/build.bat " + this.testTarget, logger, "utf8");
+                FileUtils.execCmdOutput(this.projectDir + "/cmd/build.bat " + this.testTarget, this.logDir + "/build.log", "utf8");
                 File t = new File(this.projectDir + "/bin/" + this.testTarget + ".exe");
                 if (!t.exists()) {
                     experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "编译项目时出错");
@@ -184,7 +191,7 @@ public class CheckJob implements Runnable {
                 experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在执行测试..");
                 int verify = FileUtils.execCmdOutputVerify(this.projectDir + "/cmd/run_test.bat " + this.testTarget,
                         "[  PASSED  ]",
-                        "FAILED TEST", logger, "utf8");
+                        "FAILED TEST", this.logDir + "/testcases.log", "utf8");
                 if (verify == 0) {
                     passed = true;
                 }else if (verify == -1) {
