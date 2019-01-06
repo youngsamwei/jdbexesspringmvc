@@ -68,7 +68,7 @@
                     buttons : [ {
                         text : '关闭',
                         handler : function() {
-
+                            parent.$.modalDialog.handler.dialog('close');
                         }
                     } ]
                 });

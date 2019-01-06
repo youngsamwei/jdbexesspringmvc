@@ -97,7 +97,7 @@ public class ExperimentStuController extends BaseController {
                 br = new BufferedReader(new FileReader(logFile));
                 String line = "";
                 while ((line = br.readLine()) != null) {
-                    logText += line + "<BR>";
+                    logText += line + "\n";
                 }
                 if (br != null) {
                     br.close();

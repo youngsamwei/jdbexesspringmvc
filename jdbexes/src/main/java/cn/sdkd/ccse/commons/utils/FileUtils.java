@@ -51,15 +51,33 @@ public class FileUtils {
         Runtime runtime = Runtime.getRuntime();
         BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
         String line;
-        BufferedReader br = new BufferedReader(new InputStreamReader(runtime.exec(cmd).getInputStream(), encode));
-        while ((line = br.readLine()) != null) {
-            bw.write(line);
-            bw.newLine();
+        Process process  = runtime.exec(cmd);
+        BufferedReader brStd = new BufferedReader(new InputStreamReader(process.getInputStream(), encode));
+        BufferedReader brErr = new BufferedReader(new InputStreamReader(process.getErrorStream(), encode));
+        while(true){
+            if(brErr.ready()){
+                line = brErr.readLine();
+                bw.write(line);
+                bw.newLine();
+            }
+            if(brStd.ready()){
+                line = brStd.readLine();
+                bw.write(line);
+                bw.newLine();
+            }
+            try{
+                process.exitValue();
+                break;
+            }catch (IllegalThreadStateException e){
+            }
         }
-        br.close();
+
+        brErr.close();
+        brStd.close();
         bw.flush();
         bw.close();
     }
+
     public static int execCmdOutputVerify(String cmd, String successFlag, String failedFlag, String filename, String encode) throws IOException {
         Runtime runtime = Runtime.getRuntime();
         BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
