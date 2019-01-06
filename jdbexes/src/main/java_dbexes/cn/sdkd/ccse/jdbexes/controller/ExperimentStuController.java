@@ -77,35 +77,42 @@ public class ExperimentStuController extends BaseController {
     }
 
     @RequestMapping("/openTestLogPage")
-    public Object openTestLogPage(Model model, @RequestParam("expstuno") Long expstuno){
-        ExperimentStu es = experimentStuService.selectById(expstuno);
-        String logFile = checkMissionService.getLogRootDir() + "/" + es.getStuno() + "/" + es.getExpno() ;
-        if (es.getTeststatus() == 2){
-            logFile += "/build.log";
-        }else if ((es.getTeststatus() == 3) || (es.getTeststatus() == 4)||(es.getTeststatus() == 5)){
-            logFile += "/testcases.log";
-        }
+    public Object openTestLogPage(Model model, @RequestParam("expstuno") Long expstuno) {
         String logText = "";
-        BufferedReader br= null;
-        try {
-            br  = new BufferedReader(new FileReader(logFile));
-            String line="";
-            while((line = br.readLine()) != null){
-                logText += line + "<BR>";
-            }
-            if(br != null) {
-                br.close();
-            }
-        } catch (FileNotFoundException e) {
-            logger.error(e);
-        } catch (IOException e) {
-            logger.error(e);
-        }finally {
-            if (br != null){
-                try {
+        ExperimentStu es = experimentStuService.selectById(expstuno);
+        String logFile = checkMissionService.getLogRootDir() + "/" + es.getStuno() + "/" + es.getExpno();
+        if (es.getTeststatus() == 2) {
+            logFile += "/build.log";
+        } else if ((es.getTeststatus() == 3) || (es.getTeststatus() == 4) || (es.getTeststatus() == 5)) {
+            logFile += "/testcases.log";
+        } else {
+            logFile += "/notExists.log";
+        }
+
+        if ((!new File(logFile).exists())) {
+            logText = "不存在日志.";
+        } else {
+            BufferedReader br = null;
+            try {
+                br = new BufferedReader(new FileReader(logFile));
+                String line = "";
+                while ((line = br.readLine()) != null) {
+                    logText += line + "<BR>";
+                }
+                if (br != null) {
                     br.close();
-                } catch (IOException e) {
-                    logger.error(e);
+                }
+            } catch (FileNotFoundException e) {
+                logger.error(e);
+            } catch (IOException e) {
+                logger.error(e);
+            } finally {
+                if (br != null) {
+                    try {
+                        br.close();
+                    } catch (IOException e) {
+                        logger.error(e);
+                    }
                 }
             }
         }
@@ -181,7 +188,7 @@ public class ExperimentStuController extends BaseController {
     @PostMapping("/uploadFile")
     @ResponseBody
     public Object uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("expstuno") Integer expstuno,
-                             @RequestParam("fileno") Integer fileno     ) {
+                             @RequestParam("fileno") Integer fileno) {
 
         try {
             // 默认以utf-8形式

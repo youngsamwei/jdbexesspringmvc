@@ -44,7 +44,7 @@
                     } else {
 
                         <shiro:hasPermission name="/dbexperiment_stu/edit">
-                            str += '&nbsp;&nbsp;|&nbsp;&nbsp;';
+                            str += '&nbsp;&nbsp;&nbsp;&nbsp;';
                             str += $.formatString('<a href="javascript:void(0)" class="experiment_stu-easyui-linkbutton-edit" data-options="plain:true,iconCls:\'fi-pencil icon-blue\'" onclick="editexperiment_stuFun(\'{0}\');" >提交文件</a>', row.expstuno);
                         </shiro:hasPermission>
                     }
