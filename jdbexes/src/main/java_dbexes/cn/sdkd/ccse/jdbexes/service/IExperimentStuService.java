@@ -9,9 +9,7 @@ import com.wangzhixuan.commons.result.Tree;
 import java.util.List;
 
 /**
- *
  * Examination 表数据服务层接口
- *
  */
 public interface IExperimentStuService extends IService<ExperimentStu> {
 
@@ -25,9 +23,13 @@ public interface IExperimentStuService extends IService<ExperimentStu> {
 
     void insert(Long userid, String expnos);
 
+    boolean updateStatusDesc(Long stuno, Long expno, Integer teststatus, String testdesc);
+
     List<Tree> selectTree();
+
     /**
      * 更新缓存
+     *
      * @return
      */
     boolean refreshCache();

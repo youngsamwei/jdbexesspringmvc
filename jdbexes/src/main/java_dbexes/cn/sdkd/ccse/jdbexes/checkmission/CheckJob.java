@@ -3,6 +3,7 @@ package cn.sdkd.ccse.jdbexes.checkmission;
 import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
+import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,14 +35,16 @@ public class CheckJob implements Runnable {
     private String originalProjectRootDir;
 
     private IExperimentFilesStuService experimentFilesStuService;
+    private IExperimentStuService experimentStuService;
 
     private List<ExperimentFilesStuVO> experimentFilesStuVOList;
 
-    public CheckJob(Long stuno, Long expno, IExperimentFilesStuService experimentFilesStuService, String srcDir, String projectDir, String originalProjectRootDir) {
+    public CheckJob(Long stuno, Long expno, IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService, String srcDir, String projectDir, String originalProjectRootDir) {
         this.stuno = stuno;
         this.expno = expno;
         this.experimentFilesStuService = experimentFilesStuService;
         experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
+        this.experimentStuService = experimentStuService;
 
         this.testTarget = experimentFilesStuVOList.get(0).getTesttarget();
 
@@ -101,55 +104,110 @@ public class CheckJob implements Runnable {
 
     /*执行功能测试*/
     public void step4TestCases() {
-
+        boolean passed = false;
         /*第一步：复制项目文件到学生个人文件夹*/
         try {
             FileUtils.copyDir(originalProjectRootDir, projectDir);
+            passed = true;
         } catch (IOException e) {
-            logger.debug(e.getMessage());
+            logger.error(e.getMessage());
+            experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "复制文件发生错误");
         }
-
-        /*第二步：复制作业文件到学生个人文件夹*/
-        for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
+        if (passed) {
+            passed = false;
+            /*第二步：复制作业文件到学生个人文件夹*/
+            experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在复制文件..");
+            for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
+                try {
+                    File srcf = new File(this.srcDir + "/" + efsv.getSrcfilename());
+                    if (!srcf.exists()) {
+                        experimentStuService.updateStatusDesc(this.stuno, this.expno, 1, "缺少文件:" + efsv.getSrcfilename());
+                        passed = false;
+                        break;
+                    } else {
+                        FileUtils.copyFile(this.srcDir + "/" + efsv.getSrcfilename(), this.projectDir + "/" + efsv.getDstfilename());
+                        passed = true;
+                    }
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 1, "复制文件时出错");
+                    passed = false;
+                    break;
+                }
+            }
+        }
+        if (passed) {
+            passed = false;
             try {
-                FileUtils.copyFile(this.srcDir + "/" + efsv.getSrcfilename(), this.projectDir + "/" + efsv.getDstfilename());
+                /*第三步：refresh*/
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在刷新项目..");
+                FileUtils.execCmdOutput(this.projectDir + "/cmd/refresh.bat", logger, "utf8");
+                passed = true;
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e.getMessage());
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "刷新项目时出错");
+            }
+        }
+        if (passed) {
+            passed = false;
+            try {
+            /*第四步：clean*/
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在清理项目..");
+                FileUtils.execCmdOutput(this.projectDir + "/cmd/clean.bat", logger, "utf8");
+                passed = true;
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "清理项目时出错");
+            }
+        }
+        if (passed) {
+            passed = false;
+            try {
+            /*第五步：build*/
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在编译项目..");
+                FileUtils.execCmdOutput(this.projectDir + "/cmd/build.bat " + this.testTarget, logger, "utf8");
+                File t = new File(this.projectDir + "/bin/" + this.testTarget + ".exe");
+                if (!t.exists()) {
+                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "编译项目时出错");
+                } else {
+                    passed = true;
+                }
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "编译项目时出错");
+            }
+        }
+        if (passed) {
+            passed = false;
+            try {
+            /*第六步：run_test*/
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在执行测试..");
+                int verify = FileUtils.execCmdOutputVerify(this.projectDir + "/cmd/run_test.bat " + this.testTarget,
+                        "[  PASSED  ]",
+                        "FAILED TEST", logger, "utf8");
+                if (verify == 0) {
+                    passed = true;
+                }else if (verify == -1) {
+                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "执行测试未通过");
+                }else{
+                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "执行测试时出错");
+                }
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "执行测试时出错");
             }
         }
 
-        Runtime runtime = Runtime.getRuntime();
-
+        if (passed) {
+            experimentStuService.updateStatusDesc(this.stuno, this.expno, 5, "通过");
+        }
         try {
-
-            String line;
-            BufferedReader br = new BufferedReader(new InputStreamReader(runtime.exec(this.projectDir + "/cmd/refresh.bat" ).getInputStream(), "utf8"));
-            while ((line = br.readLine()) != null) {
-                logger.debug(line);
-            }
-            br = new BufferedReader(new InputStreamReader(runtime.exec(this.projectDir + "/cmd/clean.bat").getInputStream(), "utf8"));
-            while ((line = br.readLine()) != null) {
-                logger.debug(line);
-            }
-            br = new BufferedReader(new InputStreamReader(runtime.exec(this.projectDir + "/cmd/build.bat " + this.testTarget).getInputStream(), "utf8"));
-            while ((line = br.readLine()) != null) {
-                logger.debug(line);
-            }
-            br = new BufferedReader(new InputStreamReader(runtime.exec( this.projectDir + "/cmd/run_test.bat " +  this.testTarget).getInputStream(), "utf8"));
-            while ((line = br.readLine()) != null) {
-                logger.debug(line);
-            }
-
+            /*第七步：删除临时文件夹*/
+            FileUtils.execCmdOutput(this.projectDir + "/cmd/deldir.bat " + this.projectDir, logger, "utf8");
         } catch (IOException e) {
-           logger.debug(e.getMessage());
+            logger.error("最后删除项目文件:" + e.getMessage());
         }
-        /*第三步：clean*/
 
-
-
-        /*第四步：编译*/
-
-        /*第五步：执行*/
     }
 
     @Override

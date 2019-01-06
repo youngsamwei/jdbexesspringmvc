@@ -52,6 +52,11 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
     }
 
     @Override
+    public boolean updateStatusDesc(Long stuno, Long expno, Integer teststatus, String testdesc) {
+        return experimentStuMapper.updateStatusDesc(stuno, expno, teststatus, testdesc);
+    }
+
+    @Override
     public void selectDataGridByUser(PageInfo pageInfo, Long userid) {
 
         List<Map<String, Object>> list = experimentStuMapper.selectDataGridByUser(pageInfo, userid);
@@ -74,6 +79,7 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
         return experimentStuMapper.selectById(expstuno);
     }
 
+
     @Override
     public List<Tree> selectTree() {
         List<ExperimentStu> experimentList = selectAll();
@@ -90,7 +96,9 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
         return trees;
     }
 
-    public boolean refreshCache(){
-       return experimentStuMapper.refreshCache();
-    };
+    public boolean refreshCache() {
+        return experimentStuMapper.refreshCache();
+    }
+
+    ;
 }

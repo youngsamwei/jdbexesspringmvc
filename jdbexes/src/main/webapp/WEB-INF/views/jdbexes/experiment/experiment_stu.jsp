@@ -20,32 +20,25 @@
                 field : 'expname',
                 sortable : true
             } ,  {
-                width : '60',
-                title : '状态',
-                field : 'status',
-                sortable : true,
-                formatter : function(value, row, index) {
-                    switch (value) {
-                    case 1:
-                        return '正常';
-                    case 0:
-                        return '停用';
-                    }
-                }
-            }, {
-                field : 'action',
+                 width : '400',
+                 title : '测试描述',
+                 field : 'testdesc',
+                 sortable : true
+             } , {
+                field : 'teststatus',
                 title : '操作',
                 width : 200,
                 formatter : function(value, row, index) {
                     var str = '';
+                    if (value == 0){
+                        str = "正在测试..."
+                    } else {
+
                         <shiro:hasPermission name="/dbexperiment_stu/edit">
                             str += '&nbsp;&nbsp;|&nbsp;&nbsp;';
                             str += $.formatString('<a href="javascript:void(0)" class="experiment_stu-easyui-linkbutton-edit" data-options="plain:true,iconCls:\'fi-pencil icon-blue\'" onclick="editexperiment_stuFun(\'{0}\');" >提交文件</a>', row.expstuno);
                         </shiro:hasPermission>
-                        <shiro:hasPermission name="/dbexperiment_stu/delete">
-                            str += '&nbsp;&nbsp;|&nbsp;&nbsp;';
-                            str += $.formatString('<a href="javascript:void(0)" class="experiment_stu-easyui-linkbutton-del" data-options="plain:true,iconCls:\'fi-x icon-red\'" onclick="deleteexperiment_stuFun(\'{0}\');" >不选</a>', row.expstuno);
-                        </shiro:hasPermission>
+                    }
                     return str;
                 }
             } ] ],

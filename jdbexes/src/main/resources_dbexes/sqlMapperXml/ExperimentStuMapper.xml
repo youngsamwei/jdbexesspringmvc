@@ -15,7 +15,7 @@
 
 
     <select id="selectDataGridByUser" resultType="Map">
-        select expstuno, es.expno, expname, status, selectedtime
+        select expstuno, es.expno, expname, status, selectedtime, teststatus, testdesc
         from experiment_stu es join experiment e on es.expno = e.expno
         where stuno = #{stuno}
 
@@ -30,6 +30,11 @@
 
     </select>
 
+    <update id="updateStatusDesc">
+        update experiment_stu
+        set teststatus = #{teststatus}, testdesc = #{testdesc}
+        where expno = #{expno} and stuno = #{stuno}
+    </update>
 
     <update id="refreshCache" flushCache="true">
         select 1

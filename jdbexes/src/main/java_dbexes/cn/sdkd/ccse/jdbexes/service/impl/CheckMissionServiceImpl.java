@@ -4,6 +4,7 @@ import cn.sdkd.ccse.jdbexes.checkmission.CheckJob;
 import cn.sdkd.ccse.jdbexes.checkmission.CheckJobThread;
 import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
+import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,8 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
 
     @Autowired
     private IExperimentFilesStuService experimentFilesStuService;
+    @Autowired
+    private IExperimentStuService experimentStuService;
 
     ConcurrentHashMap<String, CheckJobThread> jobThreads;
 
@@ -54,7 +57,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         String srcDir = this.submitFilesRootDir + stuno + "/" + expno + "/";
         String projectDir = this.projectRootDir + "/" + stuno + "-" + expno + "-" + UUID.randomUUID().toString() + "/";
 
-        CheckJob cj = new CheckJob(stuno, expno, experimentFilesStuService, srcDir, projectDir, this.originalProjectRootDir);
+        CheckJob cj = new CheckJob(stuno, expno, experimentFilesStuService, experimentStuService, srcDir, projectDir, this.originalProjectRootDir);
 
         CheckJobThread cjt = new CheckJobThread(cj);
         /*以“学号_实验编号”作为key*/

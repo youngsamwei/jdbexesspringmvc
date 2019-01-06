@@ -1,9 +1,8 @@
 package cn.sdkd.ccse.commons.utils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import org.apache.ibatis.logging.Log;
+
+import java.io.*;
 
 /**
  * Created by sam on 2019/1/5.
@@ -46,5 +45,91 @@ public class FileUtils {
 
         in.close();
         out.close();
+    }
+
+    public static void execCmdOutput(String cmd, String filename, String encode) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
+        BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+        String line;
+        BufferedReader br = new BufferedReader(new InputStreamReader(runtime.exec(cmd).getInputStream(), encode));
+        while ((line = br.readLine()) != null) {
+            bw.write(line);
+        }
+        br.close();
+        bw.flush();
+        bw.close();
+    }
+
+    public static void execCmdOutput(String cmd, final Log logger, String encode) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
+        String line;
+
+        final Process process = runtime.exec(cmd);
+        BufferedReader brStd = new BufferedReader(new InputStreamReader(process.getInputStream(), encode));
+        while (true) {
+            try {
+                if (brStd.ready()) {
+                    line = brStd.readLine();
+                    logger.debug(line);
+                }
+                try {
+                    int exitv = process.exitValue();
+                    logger.debug("process exitValue : " + exitv);
+                    break;
+                } catch (IllegalThreadStateException e) {
+                            /*进程未结束*/
+                }
+            } catch (IOException ioe) {
+                logger.error(ioe.getMessage());
+                break;
+            }
+        }
+
+        process.destroy();
+        brStd.close();
+        ;
+    }
+
+    public static int execCmdOutputVerify(String cmd, String successFlag, String failedFlag, final Log logger, String encode) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
+        String line, lastLine = "";
+        long start = System.currentTimeMillis();
+
+        final Process process = runtime.exec(cmd);
+        BufferedReader brStd = new BufferedReader(new InputStreamReader(process.getInputStream(), encode));
+        /*暂时 没有使用brErr*/
+        BufferedReader brErr = new BufferedReader(new InputStreamReader(process.getErrorStream(), encode));
+
+        while (true) {
+            try {
+                if (brStd.ready()) {
+                    line = brStd.readLine();
+                    logger.debug(line);
+                    lastLine = line;
+                }
+
+                try {
+                    int exitv = process.exitValue();
+                    logger.debug("process exitValue : " + exitv);
+                    break;
+                } catch (IllegalThreadStateException e) {
+                            /*进程未结束*/
+                }
+            } catch (IOException ioe) {
+                logger.error(ioe.getMessage());
+                break;
+            }
+        }
+
+        process.destroy();
+        brStd.close();
+
+        if (lastLine.contains(successFlag)) {
+            return 0;
+        } else if (lastLine.contains(failedFlag)) {
+            return -1;
+        } else {
+            return -2;
+        }
     }
 }

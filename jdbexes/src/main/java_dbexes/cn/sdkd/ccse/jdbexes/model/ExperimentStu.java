@@ -23,6 +23,9 @@ public class ExperimentStu implements java.io.Serializable {
 
     private int status;
 
+    private int teststatus;
+    private String testdesc;
+
     // Constructors
 
     /**
@@ -99,5 +102,21 @@ public class ExperimentStu implements java.io.Serializable {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public int getTeststatus() {
+        return teststatus;
+    }
+
+    public void setTeststatus(int teststatus) {
+        this.teststatus = teststatus;
+    }
+
+    public String getTestdesc() {
+        return testdesc;
+    }
+
+    public void setTestdesc(String testdesc) {
+        this.testdesc = testdesc;
     }
 }
