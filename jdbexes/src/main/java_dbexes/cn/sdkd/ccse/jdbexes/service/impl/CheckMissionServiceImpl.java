@@ -2,6 +2,7 @@ package cn.sdkd.ccse.jdbexes.service.impl;
 
 import cn.sdkd.ccse.jdbexes.checkmission.CheckJob;
 import cn.sdkd.ccse.jdbexes.checkmission.CheckJobThread;
+import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 import static java.lang.Thread.State.TERMINATED;
 
@@ -49,6 +50,9 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
 
     ConcurrentHashMap<String, CheckJobThread> jobThreads;
 
+    int poolSize;
+    ThreadPoolExecutor threadPoolExecutor;
+
     Properties props = new Properties();
 
     public CheckMissionServiceImpl() {
@@ -58,6 +62,10 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         this.originalProjectRootDir = props.getProperty("originalProjectRootDir");
         this.projectRootDir = props.getProperty("projectRootDir");
         this.logRootDir = props.getProperty("logRootDir");
+        this.poolSize = Integer.parseInt(props.getProperty("poolSize"));
+        this.threadPoolExecutor = new ThreadPoolExecutor(this.poolSize, this.poolSize,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>());
     }
 
     /*提交检查作业任务的job，检查指定学号和实验的最新版本*/
@@ -69,20 +77,24 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
 
         String srcDir = this.submitFilesRootDir + "/" + sno + "_" + sname + "/" + expno + "/";
         String projectDir = this.projectRootDir + "/" + sno + "-" + expno + "-" + UUID.randomUUID().toString() + "/";
-        String logDir = this.logRootDir + "/" + sno + "_" + sname  + "/" + expno + "/";
+        String logDir = this.logRootDir + "/" + sno + "_" + sname + "/" + expno + "/";
 
-        CheckJob cj = new CheckJob(stuno, expno, experimentFilesStuService, experimentStuService, srcDir, projectDir, this.originalProjectRootDir, logDir);
+        List<ExperimentFilesStuVO> experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(stuno, expno);
+        if(experimentFilesStuVOList.size() <=0 ){
+            experimentStuService.updateStatusDesc(stuno, expno, -1, "未提交文件");
+        }else {
 
-        CheckJobThread cjt = new CheckJobThread(cj);
-        /*以“学号_实验编号”作为key*/
-        jobThreads.put(stuno + "_" + expno, cjt);
-        cjt.start();
+            CheckJob cj = new CheckJob(stuno, expno, experimentFilesStuService, experimentStuService, srcDir, projectDir, this.originalProjectRootDir, logDir);
+
+            threadPoolExecutor.execute(cj);
+        }
+
     }
 
     /*按照学生选择实验的编号提交job*/
     @Override
-    public void submitJob(Long expstuno){
-        ExperimentStu es =  experimentStuService.selectById(expstuno);
+    public void submitJob(Long expstuno) {
+        ExperimentStu es = experimentStuService.selectById(expstuno);
         submitJob(es.getStuno(), es.getExpno());
     }
 
@@ -90,16 +102,9 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     * 若出错，则重启线程*/
     @Override
     public void monitorJob() {
-        logger.debug("当前job数量为：" + jobThreads.size());
-        int tcount = 0;
-        for (Map.Entry<String, CheckJobThread> entry : jobThreads.entrySet()) {
-            CheckJobThread cjt = entry.getValue();
-            if (cjt.getState() == TERMINATED) {
-                tcount++;
-                jobThreads.remove(entry.getKey());
-            }
-        }
-        logger.debug("移除" + tcount + "个已经结束的job.");
+        logger.debug("线程池中线程数目：" + threadPoolExecutor.getPoolSize()
+                + "，队列中等待执行的任务数目：" + threadPoolExecutor.getQueue().size()
+                + "，已执行玩别的任务数目：" + threadPoolExecutor.getCompletedTaskCount());
     }
 
     @Override

@@ -45,9 +45,9 @@ public class CheckJob implements Runnable {
         this.stuno = stuno;
         this.expno = expno;
         this.experimentFilesStuService = experimentFilesStuService;
-        experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
         this.experimentStuService = experimentStuService;
 
+        experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
         this.testTarget = experimentFilesStuVOList.get(0).getTesttarget();
 
         this.srcDir = srcDir;
