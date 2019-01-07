@@ -2,6 +2,7 @@ package cn.sdkd.ccse.jdbexes.service.impl;
 
 import cn.sdkd.ccse.jdbexes.checkmission.CheckJob;
 import cn.sdkd.ccse.jdbexes.checkmission.CheckJobThread;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
@@ -76,6 +77,13 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         /*以“学号_实验编号”作为key*/
         jobThreads.put(stuno + "_" + expno, cjt);
         cjt.start();
+    }
+
+    /*按照学生选择实验的编号提交job*/
+    @Override
+    public void submitJob(Long expstuno){
+        ExperimentStu es =  experimentStuService.selectById(expstuno);
+        submitJob(es.getStuno(), es.getExpno());
     }
 
     /*定时查看线程列表，是否有进程结束，如果结束则从队列中移除；

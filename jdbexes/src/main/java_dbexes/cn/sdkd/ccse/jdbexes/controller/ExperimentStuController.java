@@ -50,6 +50,10 @@ public class ExperimentStuController extends BaseController {
         return "jdbexes/experiment/experiment_stu";
     }
 
+    @GetMapping("/manager4Teacher")
+    public String manager4Teacher(){
+        return "jdbexes_admin/experiment_stu/experiment_stu";
+    }
     /**
      * 添加实验页
      *
@@ -183,6 +187,14 @@ public class ExperimentStuController extends BaseController {
         return pageInfo;
     }
 
+    @PostMapping("/experimentStuByExpno")
+    @ResponseBody
+    public Object experimentStuByExpno(Integer page, Integer rows, String sort, String order, Long expno){
+        PageInfo pageInfo = new PageInfo(page, rows, sort, order);
+        experimentStuService.experimentStuByExpno(pageInfo, expno);
+        return pageInfo;
+    }
+
     @RequestMapping("/experimentFilesDataGrid")
     @ResponseBody
     public Object experimentFilesDataGrid(Integer page, Integer rows, String sort, String order, Long expstuno) {
@@ -231,7 +243,20 @@ public class ExperimentStuController extends BaseController {
         logger.info("开始测试代码.");
         checkMissionService.submitJob(getUserId(), expno);
 
-        return renderSuccess("测试通过！");
+        return renderSuccess("开始测试");
+    }
+
+    @PostMapping("/checkBatch")
+    @ResponseBody
+    public Object checkBatch(String expstunos) {
+
+        logger.info("开始批量测试代码.");
+        String[] expnoArray = expstunos.split(",");
+        for(String expstuno : expnoArray) {
+            checkMissionService.submitJob(Long.parseLong(expstuno));
+        }
+
+        return renderSuccess("开始批量测试");
     }
 
     @PostMapping(value = "/tree")

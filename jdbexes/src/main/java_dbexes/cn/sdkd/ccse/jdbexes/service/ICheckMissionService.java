@@ -7,6 +7,8 @@ public interface ICheckMissionService {
 
     void submitJob(Long stuno, Long expno);
 
+    void submitJob(Long expstuno);
+
     void monitorJob();
 
     String getLogRootDir();

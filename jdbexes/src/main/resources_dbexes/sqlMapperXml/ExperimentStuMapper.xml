@@ -21,6 +21,12 @@
 
     </select>
 
+    <select id="experimentStuByExpno" resultType="Map">
+        select expstuno, u.login_name, u.name, es.status, selectedtime, teststatus, testdesc
+        from experiment_stu es join user u on es.stuno = u.id
+        where es.expno = #{expno}
+    </select>
+
     <select id="experimentFilesDataGridByUser" resultType="Map">
         select efs.expfilestuno, ef.srcfilename, efs.submittime, ef.fileno, es.expstuno
         from experiment_stu es join experiment e on es.expno = e.expno

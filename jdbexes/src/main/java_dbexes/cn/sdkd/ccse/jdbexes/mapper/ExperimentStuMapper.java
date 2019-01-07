@@ -17,6 +17,8 @@ public interface ExperimentStuMapper extends BaseMapper<ExperimentStu> {
 
     List<Map<String, Object>> selectDataGridByUser(PageInfo pageInfo, @Param("stuno")Long stuno);
 
+    List<Map<String, Object>> experimentStuByExpno(PageInfo pageInfo, @Param("expno")Long expno);
+
     List<Map<String, Object>> experimentFilesDataGridByUser(PageInfo pageInfo, @Param("stuno")Long stuno,
                                                             @Param("expstuno") Long expstuno);
 
