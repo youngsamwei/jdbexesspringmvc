@@ -232,24 +232,28 @@
         <dependency>
             <groupId>jplag</groupId>
             <artifactId>frontend-utils</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/frontend-utils-0.0.3-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>jplag</groupId>
             <artifactId>scheme</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/scheme-0.0.1-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>jplag</groupId>
             <artifactId>text</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/text-0.0.1-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>jplag</groupId>
             <artifactId>utils</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/utils-0.0.3-SNAPSHOT.jar</systemPath>
         </dependency>

@@ -5,6 +5,8 @@ import cn.sdkd.ccse.jdbexes.checkmission.CheckJobThread;
 import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
+import com.wangzhixuan.model.vo.UserVo;
+import com.wangzhixuan.service.IUserService;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,8 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     private IExperimentFilesStuService experimentFilesStuService;
     @Autowired
     private IExperimentStuService experimentStuService;
+    @Autowired
+    private IUserService userService;
 
     ConcurrentHashMap<String, CheckJobThread> jobThreads;
 
@@ -58,9 +62,13 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     /*提交检查作业任务的job，检查指定学号和实验的最新版本*/
     @Override
     public void submitJob(Long stuno, Long expno) {
-        String srcDir = this.submitFilesRootDir + stuno + "/" + expno + "/";
-        String projectDir = this.projectRootDir + "/" + stuno + "-" + expno + "-" + UUID.randomUUID().toString() + "/";
-        String logDir = this.logRootDir + "/" + stuno + "/" + expno + "/";
+        UserVo u = userService.selectVoById(stuno);
+        String sno = u.getLoginName();
+        String sname = u.getName();
+
+        String srcDir = this.submitFilesRootDir + "/" + sno + "_" + sname + "/" + expno + "/";
+        String projectDir = this.projectRootDir + "/" + sno + "-" + expno + "-" + UUID.randomUUID().toString() + "/";
+        String logDir = this.logRootDir + "/" + sno + "_" + sname  + "/" + expno + "/";
 
         CheckJob cj = new CheckJob(stuno, expno, experimentFilesStuService, experimentStuService, srcDir, projectDir, this.originalProjectRootDir, logDir);
 

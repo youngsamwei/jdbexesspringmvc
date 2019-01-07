@@ -118,7 +118,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: jplag:frontend-utils:unknown">
+      <library name="Maven: jplag:frontend-utils:0.0.3-SNAPSHOT">
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/frontend-utils-0.0.3-SNAPSHOT.jar!/" />
         </CLASSES>
@@ -127,7 +127,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: jplag:scheme:unknown">
+      <library name="Maven: jplag:scheme:0.0.1-SNAPSHOT">
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/scheme-0.0.1-SNAPSHOT.jar!/" />
         </CLASSES>
@@ -136,7 +136,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: jplag:text:unknown">
+      <library name="Maven: jplag:text:0.0.1-SNAPSHOT">
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/text-0.0.1-SNAPSHOT.jar!/" />
         </CLASSES>
@@ -145,7 +145,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: jplag:utils:unknown">
+      <library name="Maven: jplag:utils:0.0.3-SNAPSHOT">
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/utils-0.0.3-SNAPSHOT.jar!/" />
         </CLASSES>

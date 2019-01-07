@@ -9,6 +9,8 @@ import cn.sdkd.ccse.jdbexes.service.IExperimentService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
+import com.wangzhixuan.model.vo.UserVo;
+import com.wangzhixuan.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,6 +36,9 @@ public class ExperimentStuController extends BaseController {
 
     @Autowired
     private ICheckMissionService checkMissionService;
+
+    @Autowired
+    private IUserService userService;
 
     /**
      * 实验管理页
@@ -80,7 +85,8 @@ public class ExperimentStuController extends BaseController {
     public Object openTestLogPage(Model model, @RequestParam("expstuno") Long expstuno) {
         String logText = "";
         ExperimentStu es = experimentStuService.selectById(expstuno);
-        String logFile = checkMissionService.getLogRootDir() + "/" + es.getStuno() + "/" + es.getExpno();
+        UserVo u = userService.selectVoById(es.getStuno());
+        String logFile = checkMissionService.getLogRootDir() + "/" + u.getLoginName() + "_" + u.getName() + "/" + es.getExpno();
         if (es.getTeststatus() == 2) {
             logFile += "/build.log";
         } else if ((es.getTeststatus() == 3) || (es.getTeststatus() == 4) || (es.getTeststatus() == 5)) {
