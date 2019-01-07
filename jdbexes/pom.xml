@@ -207,6 +207,53 @@
             <version>1.3.1</version>
         </dependency>
 
+        <!-- jplag 依赖包 -->
+        <dependency>
+            <groupId>jplag</groupId>
+            <artifactId>jplag</artifactId>
+            <version>2.11.9-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/jplag-2.11.9-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>jplag</groupId>
+            <artifactId>chars</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/chars-0.0.1-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>jplag</groupId>
+            <artifactId>cpp</artifactId>
+            <version>0.0.2-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/cpp-0.0.2-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>jplag</groupId>
+            <artifactId>frontend-utils</artifactId>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/frontend-utils-0.0.3-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>jplag</groupId>
+            <artifactId>scheme</artifactId>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/scheme-0.0.1-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>jplag</groupId>
+            <artifactId>text</artifactId>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/text-0.0.1-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>jplag</groupId>
+            <artifactId>utils</artifactId>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/utils-0.0.3-SNAPSHOT.jar</systemPath>
+        </dependency>
+
     </dependencies>
 
     <build>

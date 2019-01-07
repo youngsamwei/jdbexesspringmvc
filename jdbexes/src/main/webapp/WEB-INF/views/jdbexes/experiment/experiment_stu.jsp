@@ -62,8 +62,8 @@
     function open_test_log_experiment_stu_fun(expstuno){
         parent.$.modalDialog({
                     title : '查看测试日志',
-                    width : 700,
-                    height : 600,
+                    width : 900,
+                    height : 700,
                     href : '${path }/dbexperiment_stu/openTestLogPage?expstuno=' + expstuno,
                     buttons : [ {
                         text : '关闭',
