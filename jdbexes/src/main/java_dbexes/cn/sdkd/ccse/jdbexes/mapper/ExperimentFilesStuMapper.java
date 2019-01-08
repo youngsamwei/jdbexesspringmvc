@@ -12,7 +12,7 @@ import java.util.List;
  * Created by Sam on 2017/7/13.
  */
 public interface ExperimentFilesStuMapper extends BaseMapper<ExperimentFilesStu> {
-    @Select("select es.expno, es.expstuno, es.stuno, ef.fileno, ef.srcfilename, ef.dstfilename, efsl.file_content, efsl.submittime, e.testtarget " +
+    @Select("select es.expno, es.expstuno, es.stuno, ef.fileno, ef.srcfilename, ef.dstfilename, ef.objfilename, efsl.file_content, efsl.submittime, e.testtarget " +
             " from experiment_stu es join experiment_files ef on es.expno = ef.expno " +
             " join experiment_files_stu_latest efsl on efsl.expstuno = es.expstuno and efsl.fileno = ef.fileno " +
             " join experiment e on es.expno=e.expno " +

@@ -24,8 +24,12 @@ public class ImportFromLanMo {
     private DBMysqlUtil mysqlUtil;
 
     public static void main(String[] args) {
-        ImportFromLanMo iflm = new ImportFromLanMo(7L,
-                "F:\\云班课作业 2018\\计算机16-1，2，3-数据库系统-课程设计_实验2_实现u_第3次",
+
+        String exp2RootDir = "F:\\云班课作业 2018\\计算机16-1，2，3-数据库系统-课程设计_实验2_实现u_第3次";
+
+        Long exp3no = 6L;
+        String exp3RootDir = "F:\\云班课作业 2018\\计算机16-1，2，3-数据库系统-课程设计_实验3_实现D_第3次";
+        ImportFromLanMo iflm = new ImportFromLanMo(exp3no, exp3RootDir,
                 "评分详情.xlsx");
 
         try {

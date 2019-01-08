@@ -14,6 +14,7 @@ public class ExperimentFilesStuVO {
     private Integer fileno;
     private String srcfilename;
     private String dstfilename;
+    private String objfilename;
 
     private String file_content;
     private Timestamp submittime;
@@ -66,6 +67,14 @@ public class ExperimentFilesStuVO {
 
     public void setDstfilename(String dstfilename) {
         this.dstfilename = dstfilename;
+    }
+
+    public String getObjfilename() {
+        return objfilename;
+    }
+
+    public void setObjfilename(String objfilename) {
+        this.objfilename = objfilename;
     }
 
     public String getFile_content() {

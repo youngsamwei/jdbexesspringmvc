@@ -120,19 +120,35 @@ public class FileUtils {
         Runtime runtime = Runtime.getRuntime();
         BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
         String line, lastLine = "";
-        BufferedReader br = new BufferedReader(new InputStreamReader(runtime.exec(cmd).getInputStream(), encode));
-        long start  = System.currentTimeMillis();
-        while ((line = br.readLine()) != null) {
-            bw.write(line);
-            bw.newLine();
-            lastLine = line;
-
-            /*超时强制退出*/
+        Long start = System.currentTimeMillis();
+        Process process  = runtime.exec(cmd);
+        BufferedReader brStd = new BufferedReader(new InputStreamReader(process.getInputStream(), encode));
+        BufferedReader brErr = new BufferedReader(new InputStreamReader(process.getErrorStream(), encode));
+        while(true){
+            if(brErr.ready()){
+                line = brErr.readLine();
+                bw.write(line);
+                bw.newLine();
+            }
+            if(brStd.ready()){
+                line = brStd.readLine();
+                bw.write(line);
+                bw.newLine();
+                lastLine = line;
+            }
+            try{
+                process.exitValue();
+                break;
+            }catch (IllegalThreadStateException e){
+            }
+                        /*超时强制退出*/
             if(System.currentTimeMillis() - start > 3000){
                 break;
             }
         }
-        br.close();
+
+        brErr.close();
+        brStd.close();
         bw.flush();
         bw.close();
 

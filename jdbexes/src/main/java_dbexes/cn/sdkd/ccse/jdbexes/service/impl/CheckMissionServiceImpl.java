@@ -1,5 +1,6 @@
 package cn.sdkd.ccse.jdbexes.service.impl;
 
+import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.checkmission.CheckJob;
 import cn.sdkd.ccse.jdbexes.checkmission.CheckJobThread;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
@@ -66,6 +67,9 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         this.threadPoolExecutor = new ThreadPoolExecutor(this.poolSize, this.poolSize,
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>());
+
+        /*清理临时项目文件夹*/
+        FileUtils.delFiles(this.projectRootDir);
     }
 
     /*提交检查作业任务的job，检查指定学号和实验的最新版本*/

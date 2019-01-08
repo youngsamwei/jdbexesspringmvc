@@ -87,9 +87,11 @@ public class CheckJob implements Runnable {
         step++;
         step4TestCases();
 
+        recovery();
+
          /*释放目录*/
         checkMissionService.addProjectDir(this.projectDir);
-        this.logger.info(this.sno + "_" + this.sname +  " set: " + this.projectDir);
+        this.logger.info(this.sno + "_" + this.sname + " set: " + this.projectDir);
     }
 
     private void init() {
@@ -113,6 +115,18 @@ public class CheckJob implements Runnable {
         } else {
             /*若log存在则删除log下所有文件*/
             FileUtils.delFiles(this.logDir);
+        }
+    }
+
+    /*恢复项目文件的初始状态*/
+    public void recovery() {
+        /*为防止多个实验测试时产生影响，因此每次都重新复制空的实验文件。*/
+        try {
+            for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
+                FileUtils.copyFile(this.originalProjectRootDir + "/" + efsv.getDstfilename(), this.projectDir + "/" + efsv.getDstfilename());
+            }
+        } catch (IOException e) {
+            logger.error(e.getMessage());
         }
     }
 
@@ -168,18 +182,7 @@ public class CheckJob implements Runnable {
                 passed = false;
             }
         }
-        /*如果重复利用现有文件夹，则需要清理obj文件和exe文件*/
-        if (!this.needRefresh) {
-            File obj1 = new File(this.projectDir + "/cmake-build-debug/src/CMakeFiles/parser.dir/__/src_experiment/exp_01_stmt_parser/exp_01_04_update.c.obj");
-            if (obj1.exists()) {
-                obj1.delete();
-            }
-            File obj2 = new File(this.projectDir + "/cmake-build-debug/src/CMakeFiles/parser.dir/__/src_experiment/exp_07_physical_operate/exp_07_05_update.c.obj");
-            if (obj2.exists()) {
-                obj2.delete();
-            }
 
-        }
         if (passed) {
             passed = false;
             /*第二步：复制作业文件到学生个人文件夹*/
@@ -228,8 +231,15 @@ public class CheckJob implements Runnable {
                     experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "清理项目时出错");
                 }
             }
+        } else {
+            /*如果重复利用现有文件夹，则需要清理obj文件*/
+            for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
+                File obj1 = new File(this.projectDir + efsv.getObjfilename());
+                if (obj1.exists()) {
+                    obj1.delete();
+                }
+            }
         }
-
 
         if (passed) {
             passed = false;
