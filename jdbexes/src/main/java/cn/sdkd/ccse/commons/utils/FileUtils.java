@@ -30,6 +30,21 @@ public class FileUtils {
         }
     }
 
+    /*删除指定文件夹下所有文件*/
+    public static void delFiles(String sourcePath)  {
+        File file = new File(sourcePath);
+        if (!file.exists()){
+            return;
+        }
+        File[] filePath = file.listFiles();
+
+        for (int i = 0; i < filePath.length; i++) {
+            if (filePath[i].isFile()){
+                filePath[i].delete();
+            }
+        }
+    }
+
     public static void copyFile(String oldPath, String newPath) throws IOException {
         File oldFile = new File(oldPath);
         File file = new File(newPath);

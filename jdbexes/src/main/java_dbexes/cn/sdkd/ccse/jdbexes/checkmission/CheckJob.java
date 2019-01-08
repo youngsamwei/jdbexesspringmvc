@@ -47,16 +47,19 @@ public class CheckJob implements Runnable {
         this.experimentFilesStuService = experimentFilesStuService;
         this.experimentStuService = experimentStuService;
 
-        experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
-        this.testTarget = experimentFilesStuVOList.get(0).getTesttarget();
-
         this.srcDir = srcDir;
         this.projectDir = projectDir;
         this.originalProjectRootDir = originalProjectRootDir;
         this.logDir = logDir;
-        initDirs();
+
     }
 
+    private void init(){
+
+        experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
+        this.testTarget = experimentFilesStuVOList.get(0).getTesttarget();
+        initDirs();
+    }
     private void initDirs() {
         File fSrcDir = new File(this.srcDir);
         if (!fSrcDir.exists()) {
@@ -69,6 +72,9 @@ public class CheckJob implements Runnable {
         File fLogDir = new File(this.logDir);
         if (!fLogDir.exists()) {
             fLogDir.mkdirs();
+        }else {
+            /*若log存在则删除log下所有文件*/
+            FileUtils.delFiles(this.logDir);
         }
     }
 
@@ -111,6 +117,7 @@ public class CheckJob implements Runnable {
 
     /*执行功能测试*/
     public void step4TestCases() {
+
         boolean passed = false;
         /*第一步：复制项目文件到学生个人文件夹*/
         try {
@@ -143,6 +150,7 @@ public class CheckJob implements Runnable {
                 }
             }
         }
+
         if (passed) {
             passed = false;
             try {
@@ -167,6 +175,7 @@ public class CheckJob implements Runnable {
                 experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "清理项目时出错");
             }
         }
+
         if (passed) {
             passed = false;
             try {
@@ -219,6 +228,8 @@ public class CheckJob implements Runnable {
 
     @Override
     public void run() {
+        init();
+
         step1GenerateFiles();
         step++;
         step2SimilarityParser();

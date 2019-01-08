@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -67,10 +68,15 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
 
     @Override
     public void experimentStuByExpno(PageInfo pageInfo, Long expno) {
-        List<Map<String, Object>> list = experimentStuMapper.experimentStuByExpno(pageInfo, expno);
+
+        Page<Map<String, Object>> page = new Page<Map<String, Object>>(pageInfo.getNowpage(), pageInfo.getSize());
+        page.setOrderByField(pageInfo.getSort());
+        page.setAsc(pageInfo.getOrder().equalsIgnoreCase("asc"));
+
+        List<Map<String, Object>> list = experimentStuMapper.experimentStuByExpno(page, expno);
 
         pageInfo.setRows(list);
-        pageInfo.setTotal(list.size());
+        pageInfo.setTotal(page.getTotal());
     }
 
     @Override

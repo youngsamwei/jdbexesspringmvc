@@ -2,6 +2,7 @@ package cn.sdkd.ccse.jdbexes.mapper;
 
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
+import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import com.wangzhixuan.commons.result.PageInfo;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -17,7 +18,7 @@ public interface ExperimentStuMapper extends BaseMapper<ExperimentStu> {
 
     List<Map<String, Object>> selectDataGridByUser(PageInfo pageInfo, @Param("stuno")Long stuno);
 
-    List<Map<String, Object>> experimentStuByExpno(PageInfo pageInfo, @Param("expno")Long expno);
+    List<Map<String, Object>> experimentStuByExpno(Pagination page,  @Param("expno")Long stuno);
 
     List<Map<String, Object>> experimentFilesDataGridByUser(PageInfo pageInfo, @Param("stuno")Long stuno,
                                                             @Param("expstuno") Long expstuno);
