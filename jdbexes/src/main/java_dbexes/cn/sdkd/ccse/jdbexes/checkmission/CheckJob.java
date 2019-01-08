@@ -2,12 +2,11 @@ package cn.sdkd.ccse.jdbexes.checkmission;
 
 import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
+import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
-import org.apache.ibatis.logging.Log;
-import org.apache.ibatis.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.List;
@@ -16,7 +15,7 @@ import java.util.List;
  * Created by sam on 2019/1/4.
  */
 public class CheckJob implements Runnable {
-    private static final Log logger = LogFactory.getLog(CheckJob.class);
+    private static final Logger logger = LoggerFactory.getLogger(CheckJob.class);
     /*从0开始计数*/
     private int step;
 
@@ -24,6 +23,9 @@ public class CheckJob implements Runnable {
     private Long stuno;
     /*实验编号*/
     private Long expno;
+
+    private String sno;
+    private String sname;
 
     private String testTarget;
 
@@ -38,41 +40,77 @@ public class CheckJob implements Runnable {
 
     private IExperimentFilesStuService experimentFilesStuService;
     private IExperimentStuService experimentStuService;
+    private ICheckMissionService checkMissionService;
 
     private List<ExperimentFilesStuVO> experimentFilesStuVOList;
+    private boolean needRefresh;
 
-    public CheckJob(Long stuno, Long expno, IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService, String srcDir, String projectDir, String originalProjectRootDir, String logDir) {
+    public CheckJob(Long stuno, Long expno, String sno, String sname,
+                    IExperimentFilesStuService experimentFilesStuService,
+                    IExperimentStuService experimentStuService,
+                    ICheckMissionService checkMissionService,
+                    String srcDir, String originalProjectRootDir, String logDir) {
         this.stuno = stuno;
         this.expno = expno;
+        this.sno = sno;
+        this.sname = sname;
+
         this.experimentFilesStuService = experimentFilesStuService;
         this.experimentStuService = experimentStuService;
+        this.checkMissionService = checkMissionService;
 
         this.srcDir = srcDir;
-        this.projectDir = projectDir;
         this.originalProjectRootDir = originalProjectRootDir;
         this.logDir = logDir;
 
     }
 
-    private void init(){
+    @Override
+    public void run() {
+        /*获得目录*/
+        if (checkMissionService.getProjectDirQueue().size() > 0) {
+            this.needRefresh = false;
+            this.projectDir = checkMissionService.getProjectDirQueue().poll();
+        } else {
+            this.needRefresh = true;
+            this.projectDir = checkMissionService.newProjectDir();
+        }
+
+        this.logger.info(this.sno + "_" + this.sname + " get: " + this.projectDir);
+        init();
+
+        step1GenerateFiles();
+        step++;
+        step2SimilarityParser();
+        step++;
+        step3SimilarityCheck();
+        step++;
+        step4TestCases();
+
+         /*释放目录*/
+        checkMissionService.addProjectDir(this.projectDir);
+        this.logger.info(this.sno + "_" + this.sname +  " set: " + this.projectDir);
+    }
+
+    private void init() {
 
         experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
         this.testTarget = experimentFilesStuVOList.get(0).getTesttarget();
-        initDirs();
-    }
-    private void initDirs() {
+
         File fSrcDir = new File(this.srcDir);
         if (!fSrcDir.exists()) {
             fSrcDir.mkdirs();
         }
+
         File fProjectDir = new File(this.projectDir);
         if (!fProjectDir.exists()) {
             fProjectDir.mkdirs();
         }
+
         File fLogDir = new File(this.logDir);
         if (!fLogDir.exists()) {
             fLogDir.mkdirs();
-        }else {
+        } else {
             /*若log存在则删除log下所有文件*/
             FileUtils.delFiles(this.logDir);
         }
@@ -118,14 +156,29 @@ public class CheckJob implements Runnable {
     /*执行功能测试*/
     public void step4TestCases() {
 
-        boolean passed = false;
-        /*第一步：复制项目文件到学生个人文件夹*/
-        try {
-            FileUtils.copyDir(originalProjectRootDir, projectDir);
-            passed = true;
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-            experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "复制文件发生错误");
+        boolean passed = true;
+        if (this.needRefresh) {
+            /*第一步：复制项目文件到学生个人文件夹*/
+            try {
+                FileUtils.copyDir(originalProjectRootDir, projectDir);
+                passed = true;
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "复制文件发生错误");
+                passed = false;
+            }
+        }
+        /*如果重复利用现有文件夹，则需要清理obj文件和exe文件*/
+        if (!this.needRefresh) {
+            File obj1 = new File(this.projectDir + "/cmake-build-debug/src/CMakeFiles/parser.dir/__/src_experiment/exp_01_stmt_parser/exp_01_04_update.c.obj");
+            if (obj1.exists()) {
+                obj1.delete();
+            }
+            File obj2 = new File(this.projectDir + "/cmake-build-debug/src/CMakeFiles/parser.dir/__/src_experiment/exp_07_physical_operate/exp_07_05_update.c.obj");
+            if (obj2.exists()) {
+                obj2.delete();
+            }
+
         }
         if (passed) {
             passed = false;
@@ -150,31 +203,33 @@ public class CheckJob implements Runnable {
                 }
             }
         }
-
-        if (passed) {
-            passed = false;
-            try {
+        if (this.needRefresh) {
+            if (passed) {
+                passed = false;
+                try {
                 /*第三步：refresh*/
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在刷新项目..");
-                FileUtils.execCmdOutput(this.projectDir + "/cmd/refresh.bat", this.logDir + "refresh.log", "utf8");
-                passed = true;
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "刷新项目时出错");
+                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在刷新项目..");
+                    FileUtils.execCmdOutput(this.projectDir + "/cmd/refresh.bat", this.logDir + "refresh.log", "utf8");
+                    passed = true;
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "刷新项目时出错");
+                }
             }
-        }
-        if (passed) {
-            passed = false;
-            try {
+            if (passed) {
+                passed = false;
+                try {
             /*第四步：clean*/
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在清理项目..");
-                FileUtils.execCmdOutput(this.projectDir + "/cmd/clean.bat", logger, "utf8");
-                passed = true;
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "清理项目时出错");
+                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在清理项目..");
+                    FileUtils.execCmdOutput(this.projectDir + "/cmd/clean.bat", logger, "utf8");
+                    passed = true;
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "清理项目时出错");
+                }
             }
         }
+
 
         if (passed) {
             passed = false;
@@ -203,9 +258,9 @@ public class CheckJob implements Runnable {
                         "FAILED TEST", this.logDir + "/testcases.log", "utf8");
                 if (verify == 0) {
                     passed = true;
-                }else if (verify == -1) {
+                } else if (verify == -1) {
                     experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "执行测试未通过");
-                }else{
+                } else {
                     experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "执行测试时出错");
                 }
             } catch (IOException e) {
@@ -217,25 +272,16 @@ public class CheckJob implements Runnable {
         if (passed) {
             experimentStuService.updateStatusDesc(this.stuno, this.expno, 5, "通过");
         }
-        try {
-            /*第七步：删除临时文件夹*/
-            FileUtils.execCmdOutput(this.projectDir + "/cmd/deldir.bat " + this.projectDir, logger, "utf8");
-        } catch (IOException e) {
-            logger.error("最后删除项目文件:" + e.getMessage());
-        }
+
+        /*删除bin文件夹下所有文件和文件夹*/
+        FileUtils.delFiles(this.projectDir + "/bin/");
+//        try {
+//            /*第七步：删除临时文件夹*/
+//            FileUtils.execCmdOutput(this.projectDir + "/cmd/deldir.bat " + this.projectDir, logger, "utf8");
+//        } catch (IOException e) {
+//            logger.error("最后删除项目文件:" + e.getMessage());
+//        }
 
     }
 
-    @Override
-    public void run() {
-        init();
-
-        step1GenerateFiles();
-        step++;
-        step2SimilarityParser();
-        step++;
-        step3SimilarityCheck();
-        step++;
-        step4TestCases();
-    }
 }

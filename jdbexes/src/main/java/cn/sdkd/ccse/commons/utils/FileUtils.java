@@ -1,6 +1,6 @@
 package cn.sdkd.ccse.commons.utils;
 
-import org.apache.ibatis.logging.Log;
+import org.slf4j.Logger;
 
 import java.io.*;
 
@@ -30,18 +30,41 @@ public class FileUtils {
         }
     }
 
-    /*删除指定文件夹下所有文件*/
+    /*删除指定文件夹下所有文件和文件夹*/
     public static void delFiles(String sourcePath)  {
         File file = new File(sourcePath);
         if (!file.exists()){
             return;
         }
+        if (file.isFile()){
+            file.delete();
+            return;
+        }
         File[] filePath = file.listFiles();
 
         for (int i = 0; i < filePath.length; i++) {
-            if (filePath[i].isFile()){
+            if (filePath[i].isDirectory()) {
+                removeDir(filePath[i].getAbsolutePath());
+            }else{
                 filePath[i].delete();
             }
+        }
+    }
+
+    /*删除文件夹以及内容，包括子文件夹和文件*/
+    public static void removeDir(String dir){
+        File file = new File(dir);
+        if (file.exists()){
+            if(file.isDirectory()){
+                for (File f : file.listFiles()) {
+                    if (f.isDirectory()) {
+                        removeDir(f.getAbsolutePath());
+                    }else{
+                        f.delete();
+                    }
+                }
+            }
+            file.delete();
         }
     }
 
@@ -122,7 +145,7 @@ public class FileUtils {
         }
     }
 
-    public static void execCmdOutput(String cmd, final Log logger, String encode) throws IOException {
+    public static void execCmdOutput(String cmd, final Logger logger, String encode) throws IOException {
         Runtime runtime = Runtime.getRuntime();
         String line;
 
@@ -152,7 +175,7 @@ public class FileUtils {
         ;
     }
 
-    public static int execCmdOutputVerify(String cmd, String successFlag, String failedFlag, final Log logger, String encode) throws IOException {
+    public static int execCmdOutputVerify(String cmd, String successFlag, String failedFlag, final Logger logger, String encode) throws IOException {
         Runtime runtime = Runtime.getRuntime();
         String line, lastLine = "";
         long start = System.currentTimeMillis();

@@ -48,7 +48,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     @Autowired
     private IUserService userService;
 
-    ConcurrentHashMap<String, CheckJobThread> jobThreads;
+    ConcurrentLinkedQueue<String> projectDirQueue;
 
     int poolSize;
     ThreadPoolExecutor threadPoolExecutor;
@@ -56,7 +56,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     Properties props = new Properties();
 
     public CheckMissionServiceImpl() {
-        jobThreads = new ConcurrentHashMap<String, CheckJobThread>();
+        projectDirQueue = new ConcurrentLinkedQueue<String>();
         initProperties();
         this.submitFilesRootDir = props.getProperty("submitFilesRootDir");
         this.originalProjectRootDir = props.getProperty("originalProjectRootDir");
@@ -76,15 +76,19 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         String sname = u.getName();
 
         String srcDir = this.submitFilesRootDir + "/" + sno + "_" + sname + "/" + expno + "/";
-        String projectDir = this.projectRootDir + "/" + sno + "-" + expno + "-" + UUID.randomUUID().toString() + "/";
         String logDir = this.logRootDir + "/" + sno + "_" + sname + "/" + expno + "/";
 
         List<ExperimentFilesStuVO> experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(stuno, expno);
-        if(experimentFilesStuVOList.size() <=0 ){
+        if (experimentFilesStuVOList.size() <= 0) {
             experimentStuService.updateStatusDesc(stuno, expno, -1, "未提交文件");
-        }else {
+        } else {
 
-            CheckJob cj = new CheckJob(stuno, expno, experimentFilesStuService, experimentStuService, srcDir, projectDir, this.originalProjectRootDir, logDir);
+            CheckJob cj = new CheckJob(stuno, expno, sno, sname, experimentFilesStuService,
+                    experimentStuService,
+                    this,
+                    srcDir,
+                    this.originalProjectRootDir,
+                    logDir);
 
             threadPoolExecutor.execute(cj);
         }
@@ -112,6 +116,16 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         return this.logRootDir;
     }
 
+    @Override
+    public String newProjectDir(){
+        return this.projectRootDir + "/" + UUID.randomUUID().toString() + "/";
+    }
+
+    @Override
+    public boolean addProjectDir(String s) {
+        return projectDirQueue.offer(s);
+    }
+
     /**
      * 获取配置文件
      *
@@ -126,5 +140,9 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public ConcurrentLinkedQueue<String> getProjectDirQueue() {
+        return projectDirQueue;
     }
 }
