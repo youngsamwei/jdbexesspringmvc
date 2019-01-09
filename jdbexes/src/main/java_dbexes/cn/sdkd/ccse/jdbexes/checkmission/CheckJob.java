@@ -183,6 +183,9 @@ public class CheckJob implements Runnable {
             }
         }
 
+        /*清理bin文件夹下所有文件和文件夹*/
+        FileUtils.delFiles(this.projectDir + "/bin/");
+
         if (passed) {
             passed = false;
             /*第二步：复制作业文件到学生个人文件夹*/

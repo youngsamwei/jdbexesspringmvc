@@ -86,7 +86,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         if (experimentFilesStuVOList.size() <= 0) {
             experimentStuService.updateStatusDesc(stuno, expno, -1, "未提交文件");
         } else {
-
+            experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
             CheckJob cj = new CheckJob(stuno, expno, sno, sname, experimentFilesStuService,
                     experimentStuService,
                     this,
