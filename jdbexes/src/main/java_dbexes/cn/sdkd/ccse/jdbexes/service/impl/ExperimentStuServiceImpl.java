@@ -59,21 +59,24 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
 
     @Override
     public void selectDataGridByUser(PageInfo pageInfo, Long userid) {
+        Page<Map<String, Object>> page = new Page<Map<String, Object>>(pageInfo.getNowpage(), pageInfo.getSize());
+        page.setOrderByField(pageInfo.getSort());
+        page.setAsc(pageInfo.getOrder().equalsIgnoreCase("asc"));
 
-        List<Map<String, Object>> list = experimentStuMapper.selectDataGridByUser(pageInfo, userid);
+        List<Map<String, Object>> list = experimentStuMapper.selectDataGridByUser(page, userid);
 
         pageInfo.setRows(list);
-        pageInfo.setTotal(list.size());
+        pageInfo.setTotal(page.getTotal());
     }
 
     @Override
-    public void experimentStuByExpno(PageInfo pageInfo, Long expno) {
+    public void experimentStuByExpno(PageInfo pageInfo) {
 
         Page<Map<String, Object>> page = new Page<Map<String, Object>>(pageInfo.getNowpage(), pageInfo.getSize());
         page.setOrderByField(pageInfo.getSort());
         page.setAsc(pageInfo.getOrder().equalsIgnoreCase("asc"));
 
-        List<Map<String, Object>> list = experimentStuMapper.experimentStuByExpno(page, expno);
+        List<Map<String, Object>> list = experimentStuMapper.experimentStuByExpno(page, pageInfo.getCondition());
 
         pageInfo.setRows(list);
         pageInfo.setTotal(page.getTotal());
@@ -82,7 +85,9 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
     @Override
     public void experimentFilesDataGridByUser(PageInfo pageInfo, Long userid, Long expstuno) {
         Page<Map<String, Object>> page = new Page<Map<String, Object>>(pageInfo.getNowpage(), pageInfo.getSize());
-        List<Map<String, Object>> list = experimentStuMapper.experimentFilesDataGridByUser(pageInfo, userid, expstuno);
+        page.setOrderByField(pageInfo.getSort());
+        page.setAsc(pageInfo.getOrder().equalsIgnoreCase("asc"));
+        List<Map<String, Object>> list = experimentStuMapper.experimentFilesDataGridByUser(page, userid, expstuno);
 
         pageInfo.setRows(list);
         pageInfo.setTotal(page.getTotal());

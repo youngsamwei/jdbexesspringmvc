@@ -9,7 +9,7 @@
         fileno, expno, srcfilename, dstfilename
     </sql>
 
-    <select id="selectExperimentFilesPage" resultType="Map">
+    <select id="selectExperimentFilesPage" resultType="Map" useCache="false">
         SELECT
             fileno, expno, srcfilename, dstfilename
         from experiment_files

@@ -32,7 +32,7 @@
              } ,  {
                 width : '60',
                 title : '状态',
-                field : 'isOpen',
+                field : 'is_open',
                 sortable : true,
                 formatter : function(value, row, index) {
                     switch (value) {

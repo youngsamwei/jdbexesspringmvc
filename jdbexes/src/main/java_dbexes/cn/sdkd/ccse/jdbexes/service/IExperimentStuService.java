@@ -15,7 +15,7 @@ public interface IExperimentStuService extends IService<ExperimentStu> {
 
     void selectDataGridByUser(PageInfo pageInfo, Long userid);
 
-    void experimentStuByExpno(PageInfo pageInfo, Long expno);
+    void experimentStuByExpno(PageInfo pageInfo);
 
     void experimentFilesDataGridByUser(PageInfo pageInfo, Long userid, Long expstuno);
 

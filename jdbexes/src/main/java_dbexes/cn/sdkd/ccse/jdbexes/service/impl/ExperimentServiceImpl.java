@@ -33,22 +33,24 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
 
     @Override
     public void selectDataGrid(PageInfo pageInfo) {
-        Page<Experiment> page = new Page<Experiment>(pageInfo.getNowpage(), pageInfo.getSize());
+        Page<Map<String, Object>> page = new Page<Map<String, Object>>(pageInfo.getNowpage(), pageInfo.getSize());
+        page.setOrderByField(pageInfo.getSort());
+        page.setAsc(pageInfo.getOrder().equalsIgnoreCase("asc"));
+        List<Map<String, Object>> list = experimentMapper.selectDataGrid(page);
 
-        EntityWrapper<Experiment> wrapper = new EntityWrapper<Experiment>();
-        wrapper.orderBy(pageInfo.getSort(), pageInfo.getOrder().equalsIgnoreCase("ASC"));
-        selectPage(page, wrapper);
-
-        pageInfo.setRows(page.getRecords());
+        pageInfo.setRows(list);
         pageInfo.setTotal(page.getTotal());
     }
 
     @Override
     public void unSelectedDataGrid(PageInfo pageInfo, Long userid) {
-        List<Map<String, Object>> list = experimentMapper.unSelectedDataGrid(pageInfo, userid);
+        Page<Map<String, Object>> page = new Page<Map<String, Object>>(pageInfo.getNowpage(), pageInfo.getSize());
+        page.setOrderByField(pageInfo.getSort());
+        page.setAsc(pageInfo.getOrder().equalsIgnoreCase("asc"));
+        List<Map<String, Object>> list = experimentMapper.unSelectedDataGrid(page, userid);
 
         pageInfo.setRows(list);
-        pageInfo.setTotal(list.size());
+        pageInfo.setTotal(page.getTotal());
     }
 
     @Override

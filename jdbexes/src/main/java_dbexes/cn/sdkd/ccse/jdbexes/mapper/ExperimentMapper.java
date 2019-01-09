@@ -1,13 +1,11 @@
 package cn.sdkd.ccse.jdbexes.mapper;
 
 import cn.sdkd.ccse.jdbexes.model.Experiment;
-import cn.sdkd.ccse.jsqles.model.Examination;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
-import com.baomidou.mybatisplus.mapper.Wrapper;
-import com.wangzhixuan.commons.result.PageInfo;
+import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +14,10 @@ import java.util.Map;
  */
 public interface ExperimentMapper extends BaseMapper<Experiment> {
 
-    List<Map<String, Object>> unSelectedDataGrid(PageInfo pageInfo, @Param("stuno")Long stuno);
+    List<Map<String, Object>> unSelectedDataGrid(Pagination page, @Param("stuno")Long stuno);
+
+    @Select("select expno, expname, testtarget, is_open from experiment ")
+    List<Map<String, Object>> selectDataGrid(Pagination page);
 
     boolean refreshCache();
 }

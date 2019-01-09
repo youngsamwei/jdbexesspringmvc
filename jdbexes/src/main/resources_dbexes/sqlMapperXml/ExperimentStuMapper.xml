@@ -14,20 +14,30 @@
     </resultMap>
 
 
-    <select id="selectDataGridByUser" resultType="Map">
+    <select id="selectDataGridByUser" resultType="Map" useCache="false">
         select expstuno, es.expno, expname, status, selectedtime, teststatus, testdesc
         from experiment_stu es join experiment e on es.expno = e.expno
-        where stuno = #{stuno}
+        <where>
+            <if test=" stuno != null and stuno != '' ">
+                stuno = #{stuno}
+            </if>
+
+        </where>
 
     </select>
 
-    <select id="experimentStuByExpno" resultType="Map">
+    <select id="experimentStuByExpno" resultType="Map" useCache="false">
         select expstuno, u.login_name, u.name, es.status, selectedtime, teststatus, testdesc
         from experiment_stu es join user u on es.stuno = u.id
-        where es.expno = #{expno}
+        <where>
+            <if test=" expno != null and expno != '' ">
+                expno = #{expno}
+            </if>
+
+        </where>
     </select>
 
-    <select id="experimentFilesDataGridByUser" resultType="Map">
+    <select id="experimentFilesDataGridByUser" resultType="Map"  useCache="false">
         select efs.expfilestuno, ef.srcfilename, efs.submittime, ef.fileno, es.expstuno
         from experiment_stu es join experiment e on es.expno = e.expno
         join experiment_files ef on ef.expno = e.expno

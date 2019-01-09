@@ -19,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Controller
@@ -191,7 +193,10 @@ public class ExperimentStuController extends BaseController {
     @ResponseBody
     public Object experimentStuByExpno(Integer page, Integer rows, String sort, String order, Long expno){
         PageInfo pageInfo = new PageInfo(page, rows, sort, order);
-        experimentStuService.experimentStuByExpno(pageInfo, expno);
+        Map<String, Object> condition = new HashMap<String, Object>();
+        condition.put("expno", expno);
+        pageInfo.setCondition(condition);
+        experimentStuService.experimentStuByExpno(pageInfo);
         return pageInfo;
     }
 
