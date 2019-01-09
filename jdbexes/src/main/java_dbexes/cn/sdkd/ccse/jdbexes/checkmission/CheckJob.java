@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.List;
 
-/**
+/** 测试实验作业是否通过测试用例。
  * Created by sam on 2019/1/4.
  */
 public class CheckJob implements Runnable {

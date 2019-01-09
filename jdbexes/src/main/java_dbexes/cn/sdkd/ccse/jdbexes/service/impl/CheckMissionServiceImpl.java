@@ -2,7 +2,6 @@ package cn.sdkd.ccse.jdbexes.service.impl;
 
 import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.checkmission.CheckJob;
-import cn.sdkd.ccse.jdbexes.checkmission.CheckJobThread;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
@@ -21,8 +20,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static java.lang.Thread.State.TERMINATED;
 
 /**
  * Created by sam on 2019/1/4.

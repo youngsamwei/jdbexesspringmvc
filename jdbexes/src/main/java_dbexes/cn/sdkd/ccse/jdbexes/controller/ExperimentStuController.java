@@ -3,10 +3,7 @@ package cn.sdkd.ccse.jdbexes.controller;
 import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
-import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
-import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
-import cn.sdkd.ccse.jdbexes.service.IExperimentService;
-import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
+import cn.sdkd.ccse.jdbexes.service.*;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.model.vo.UserVo;
@@ -38,6 +35,9 @@ public class ExperimentStuController extends BaseController {
 
     @Autowired
     private ICheckMissionService checkMissionService;
+
+    @Autowired
+    private IJPlagService jPlagService;
 
     @Autowired
     private IUserService userService;
@@ -247,6 +247,8 @@ public class ExperimentStuController extends BaseController {
 
         logger.info("开始测试代码.");
         checkMissionService.submitJob(getUserId(), expno);
+        logger.info("开始测试相似度.");
+        jPlagService.submitJob(getUserId(), expno);
 
         return renderSuccess("开始测试");
     }
