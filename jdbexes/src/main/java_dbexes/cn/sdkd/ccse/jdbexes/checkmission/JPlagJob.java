@@ -40,7 +40,7 @@ public class JPlagJob implements Runnable {
     public void run() {
         try {
             parse();
-            jPlagService.compare(this.submission);
+            jPlagService.compare(this.expno + "", this.submission);
         } catch (ExitException e) {
             logger.error(e.getMessage());
         }
@@ -48,11 +48,11 @@ public class JPlagJob implements Runnable {
 
     /*解析当前作业*/
     private void parse() throws ExitException {
-        File f = new File(this.submitFilesRootDir + "/"  + sno + "_" + sname + "/");
-        this.submission = new Submission(sno + "_" + sname, f, true, jPlagService.getProgram(), jPlagService.getProgram().get_language());
+        File f = new File(this.submitFilesRootDir + "/"  + sno + "_" + sname + "/" + this.expno + "/");
+        this.submission = new Submission(sno + "_" + sname, f, false, jPlagService.getProgram(), jPlagService.getProgram().get_language());
         submission.parse();
 
-        jPlagService.putSubmission(sno + "_" + sname, submission);
+        jPlagService.putSubmission(this.expno + "", sno + "_" + sname, submission);
     }
 
 }

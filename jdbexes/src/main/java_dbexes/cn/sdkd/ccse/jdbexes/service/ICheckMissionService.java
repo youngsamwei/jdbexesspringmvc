@@ -14,7 +14,11 @@ public interface ICheckMissionService {
     void monitorJob();
 
     String getLogRootDir();
+
     boolean addProjectDir(String s);
+
     ConcurrentLinkedQueue<String> getProjectDirQueue();
+
     String newProjectDir();
+
 }

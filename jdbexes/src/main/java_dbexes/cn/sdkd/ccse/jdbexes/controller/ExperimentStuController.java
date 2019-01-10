@@ -247,8 +247,6 @@ public class ExperimentStuController extends BaseController {
 
         logger.info("开始测试代码.");
         checkMissionService.submitJob(getUserId(), expno);
-        logger.info("开始测试相似度.");
-        jPlagService.submitJob(getUserId(), expno);
 
         return renderSuccess("开始测试");
     }

@@ -1,5 +1,6 @@
 package cn.sdkd.ccse.jdbexes.service;
 
+import jplag.ExitException;
 import jplag.Program;
 import jplag.Submission;
 
@@ -10,9 +11,11 @@ public interface IJPlagService {
     /*测试指定学生的指定实验与其他学生的指定实验的相似程度，返回最高的相似度*/
     void submitJob(Long stuno, Long expno);
 
-    Submission getSubmission(String name);
-    void putSubmission(String name, Submission submission);
+    Submission getSubmission(String expno, String name);
+    void putSubmission(String expno, String name, Submission submission);
     Program getProgram();
-    void compare(Submission submission);
+    void compare(String expno, Submission submission);
+    void updateSubmission(String expno, String sno, String sname) throws ExitException;
+    boolean compareSubmission(String expno, String sno, String sname);
 
 }

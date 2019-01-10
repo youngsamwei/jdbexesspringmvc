@@ -7,26 +7,33 @@ import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
+import cn.sdkd.ccse.jdbexes.service.IJPlagService;
 import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
-import org.apache.ibatis.logging.Log;
-import org.apache.ibatis.logging.LogFactory;
+import jplag.ExitException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.*;
+import java.util.List;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by sam on 2019/1/4.
  */
 @Service
 public class CheckMissionServiceImpl implements ICheckMissionService {
-    private static final Log logger = LogFactory.getLog(CheckMissionServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(CheckMissionServiceImpl.class);
 
     /*所有学生提交文件的根目录，每个学生一个文件夹，每个实验一个文件夹*/
     private String submitFilesRootDir;
@@ -45,6 +52,8 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     private IExperimentStuService experimentStuService;
     @Autowired
     private IUserService userService;
+    @Autowired
+    private IJPlagService jPlagService;
 
     ConcurrentLinkedQueue<String> projectDirQueue;
 
@@ -83,19 +92,58 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         if (experimentFilesStuVOList.size() <= 0) {
             experimentStuService.updateStatusDesc(stuno, expno, -1, "未提交文件");
         } else {
-            experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
-            CheckJob cj = new CheckJob(stuno, expno, sno, sname, experimentFilesStuService,
-                    experimentStuService,
-                    this,
-                    srcDir,
-                    this.originalProjectRootDir,
-                    logDir);
 
-            threadPoolExecutor.execute(cj);
+            /*先生成文件*/
+            this.generateFiles(srcDir, experimentFilesStuVOList);
+
+            /*再检查相似度*/
+            boolean passed = false;
+            try {
+                jPlagService.updateSubmission(expno + "", sno, sname);
+                passed = jPlagService.compareSubmission(expno + "", sno, sname);
+            } catch (ExitException e) {
+                logger.error(e.getMessage());
+            }
+            if (passed){
+                /*相似度通过再测试*/
+                experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
+                CheckJob cj = new CheckJob(stuno, expno, sno, sname, experimentFilesStuService,
+                        experimentStuService,
+                        this,
+                        srcDir,
+                        this.originalProjectRootDir,
+                        logDir);
+
+                threadPoolExecutor.execute(cj);
+            } else {
+                /*相似度测试未通过*/
+                experimentStuService.updateStatusDesc(stuno, expno, -1, "相似度过高");
+            }
+
         }
 
     }
 
+    private void generateFiles(String srcDir, List<ExperimentFilesStuVO> experimentFilesStuVOList){
+        logger.debug("获得" + experimentFilesStuVOList.size() + "文件");
+        for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
+            String fname = srcDir + efsv.getSrcfilename();
+            OutputStreamWriter op = null;
+            try {
+                op = new OutputStreamWriter(new FileOutputStream(fname), "utf-8");
+                op.append(efsv.getFile_content());
+                op.flush();
+                op.close();
+            } catch (UnsupportedEncodingException e) {
+                logger.debug(e.getMessage());
+            } catch (FileNotFoundException e) {
+                logger.debug(e.getMessage());
+            } catch (IOException e) {
+                logger.debug(e.getMessage());
+            }
+
+        }
+    }
     /*按照学生选择实验的编号提交job*/
     @Override
     public void submitJob(Long expstuno) {
@@ -118,7 +166,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     }
 
     @Override
-    public String newProjectDir(){
+    public String newProjectDir() {
         return this.projectRootDir + "/" + UUID.randomUUID().toString() + "/";
     }
 
