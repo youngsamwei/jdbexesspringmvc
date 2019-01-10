@@ -20,6 +20,7 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -101,32 +102,35 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
             try {
                 jPlagService.updateSubmission(expno + "", sno, sname);
                 passed = jPlagService.compareSubmission(expno + "", sno, sname);
+                experimentStuService.updateSimStatus(stuno, expno, passed ? 1 : -1, passed ? "相似度较低":"相似度较低");
+
             } catch (ExitException e) {
                 logger.error(e.getMessage());
             }
-            if (passed){
                 /*相似度通过再测试*/
-                experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
-                CheckJob cj = new CheckJob(stuno, expno, sno, sname, experimentFilesStuService,
-                        experimentStuService,
-                        this,
-                        srcDir,
-                        this.originalProjectRootDir,
-                        logDir);
+            experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
+            CheckJob cj = new CheckJob(stuno, expno, sno, sname, experimentFilesStuService,
+                    experimentStuService,
+                    this,
+                    srcDir,
+                    this.originalProjectRootDir,
+                    logDir);
 
-                threadPoolExecutor.execute(cj);
-            } else {
-                /*相似度测试未通过*/
-                experimentStuService.updateStatusDesc(stuno, expno, -1, "相似度过高");
-            }
+            threadPoolExecutor.execute(cj);
 
         }
 
     }
 
-    private void generateFiles(String srcDir, List<ExperimentFilesStuVO> experimentFilesStuVOList){
+    private void generateFiles(String srcDir, List<ExperimentFilesStuVO> experimentFilesStuVOList) {
         logger.debug("获得" + experimentFilesStuVOList.size() + "文件");
+        Timestamp maxtt = null;
         for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
+            if (maxtt == null){
+                maxtt = efsv.getSubmittime();
+            }else if (maxtt.after(efsv.getSubmittime())){
+                maxtt = efsv.getSubmittime();
+            }
             String fname = srcDir + efsv.getSrcfilename();
             OutputStreamWriter op = null;
             try {
@@ -135,15 +139,41 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
                 op.flush();
                 op.close();
             } catch (UnsupportedEncodingException e) {
-                logger.debug(e.getMessage());
+                logger.error(e.getMessage());
             } catch (FileNotFoundException e) {
-                logger.debug(e.getMessage());
+                logger.error(e.getMessage());
             } catch (IOException e) {
-                logger.debug(e.getMessage());
+                logger.error(e.getMessage());
+            }finally {
+                try {
+                    op.close();
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                }
             }
-
+        }
+        /*写提交时间至文件*/
+        OutputStreamWriter op = null;
+        try {
+            op = new OutputStreamWriter(new FileOutputStream(srcDir + "/time.txt"), "utf-8");
+            op.append(maxtt.toString());
+            op.flush();
+            op.close();
+        } catch (UnsupportedEncodingException e) {
+            logger.error(e.getMessage());
+        } catch (FileNotFoundException e) {
+            logger.error(e.getMessage());
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }finally {
+            try {
+                op.close();
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
         }
     }
+
     /*按照学生选择实验的编号提交job*/
     @Override
     public void submitJob(Long expstuno) {

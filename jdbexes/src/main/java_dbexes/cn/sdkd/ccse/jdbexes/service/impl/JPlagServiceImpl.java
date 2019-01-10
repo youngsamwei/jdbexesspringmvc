@@ -1,6 +1,5 @@
 package cn.sdkd.ccse.jdbexes.service.impl;
 
-import cn.sdkd.ccse.jdbexes.checkmission.JPlagJob;
 import cn.sdkd.ccse.jdbexes.service.IJPlagService;
 import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
@@ -89,20 +88,6 @@ public class JPlagServiceImpl implements IJPlagService {
             logger.info("* 实验" + entry.getKey() + ": " + entry.getValue().size() + "份.");
         }
 
-    }
-
-    @Override
-    public void submitJob(Long stuno, Long expno) {
-        UserVo u = userService.selectVoById(stuno);
-        String sno = u.getLoginName();
-        String sname = u.getName();
-        String srcDir = this.submitFilesRootDir + "/" + sno + "_" + sname + "/" + expno + "/";
-        File fSrcDir = new File(srcDir);
-        if (fSrcDir.exists()) {
-            JPlagJob jPlagJob = new JPlagJob(stuno, expno, sno, sname, this.submitFilesRootDir, this);
-            this.threadPoolExecutor.execute(jPlagJob);
-
-        }
     }
 
     @Override

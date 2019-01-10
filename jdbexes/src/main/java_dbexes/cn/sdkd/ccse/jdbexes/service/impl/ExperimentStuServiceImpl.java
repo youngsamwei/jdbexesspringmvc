@@ -58,6 +58,11 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
     }
 
     @Override
+    public boolean updateSimStatus(Long stuno, Long expno, Integer simstatus, String simdesc) {
+        return experimentStuMapper.updateSimStatus(stuno, expno, simstatus, simdesc);
+    }
+
+    @Override
     public void selectDataGridByUser(PageInfo pageInfo, Long userid) {
         Page<Map<String, Object>> page = new Page<Map<String, Object>>(pageInfo.getNowpage(), pageInfo.getSize());
         page.setOrderByField(pageInfo.getSort());

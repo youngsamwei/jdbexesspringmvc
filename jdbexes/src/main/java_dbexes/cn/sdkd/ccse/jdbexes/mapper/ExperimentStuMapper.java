@@ -28,5 +28,7 @@ public interface ExperimentStuMapper extends BaseMapper<ExperimentStu> {
 
     boolean updateStatusDesc(@Param("stuno")Long stuno,@Param("expno") Long expno, @Param("teststatus") Integer teststatus, @Param("testdesc") String testdesc);
 
+    boolean updateSimStatus(@Param("stuno")Long stuno, @Param("expno")Long expno, @Param("simstatus")Integer simstatus, @Param("simdesc")String simdesc);
+
     boolean refreshCache();
 }

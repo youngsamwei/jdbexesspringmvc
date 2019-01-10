@@ -25,7 +25,8 @@ public class ExperimentStu implements java.io.Serializable {
 
     private int teststatus;
     private String testdesc;
-
+    private int simstatus;
+    private String simdesc;
     // Constructors
 
     /**
@@ -118,5 +119,21 @@ public class ExperimentStu implements java.io.Serializable {
 
     public void setTestdesc(String testdesc) {
         this.testdesc = testdesc;
+    }
+
+    public int getSimstatus() {
+        return simstatus;
+    }
+
+    public void setSimstatus(int simstatus) {
+        this.simstatus = simstatus;
+    }
+
+    public String getSimdesc() {
+        return simdesc;
+    }
+
+    public void setSimdesc(String simdesc) {
+        this.simdesc = simdesc;
     }
 }

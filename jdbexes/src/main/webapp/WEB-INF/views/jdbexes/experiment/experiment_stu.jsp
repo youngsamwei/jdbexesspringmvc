@@ -33,10 +33,15 @@
                         return value;
                     }
                  }
-             } , {
+             },  {
+                   width : '100',
+                   title : '与已经提交作业相比',
+                   field : 'simdesc',
+                   sortable : true
+               } , {
                 field : 'teststatus',
                 title : '操作',
-                width : 200,
+                width : 100,
                 formatter : function(value, row, index) {
                     var str = '';
                     if (value == 0){

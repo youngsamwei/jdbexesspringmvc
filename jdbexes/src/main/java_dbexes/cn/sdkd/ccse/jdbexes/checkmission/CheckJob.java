@@ -44,6 +44,7 @@ public class CheckJob implements Runnable {
 
     private List<ExperimentFilesStuVO> experimentFilesStuVOList;
     private boolean needRefresh;
+    private boolean simPassed;
 
     public CheckJob(Long stuno, Long expno, String sno, String sname,
                     IExperimentFilesStuService experimentFilesStuService,

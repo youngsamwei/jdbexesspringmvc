@@ -15,7 +15,7 @@
 
 
     <select id="selectDataGridByUser" resultType="Map" useCache="false">
-        select expstuno, es.expno, expname, status, selectedtime, teststatus, testdesc
+        select expstuno, es.expno, expname, status, selectedtime, teststatus, testdesc, simstatus, simdesc
         from experiment_stu es join experiment e on es.expno = e.expno
         <where>
             <if test=" stuno != null and stuno != '' ">
@@ -27,7 +27,7 @@
     </select>
 
     <select id="experimentStuByExpno" resultType="Map" useCache="false">
-        select expstuno, u.login_name, u.name, es.status, selectedtime, teststatus, testdesc
+        select expstuno, u.login_name, u.name, es.status, selectedtime, teststatus, testdesc, simstatus, simdesc
         from experiment_stu es join user u on es.stuno = u.id
         <where>
             <if test=" expno != null and expno != '' ">
@@ -49,6 +49,12 @@
     <update id="updateStatusDesc">
         update experiment_stu
         set teststatus = #{teststatus}, testdesc = #{testdesc}
+        where expno = #{expno} and stuno = #{stuno}
+    </update>
+
+    <update id="updateSimStatus">
+        update experiment_stu
+        set simstatus = #{simstatus}, simdesc = #{simdesc}
         where expno = #{expno} and stuno = #{stuno}
     </update>
 
