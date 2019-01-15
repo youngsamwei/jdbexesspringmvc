@@ -1,6 +1,7 @@
 package cn.sdkd.ccse.jdbexes.neo4j.entities;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.AbstractEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
 
@@ -15,6 +16,7 @@ import java.util.Set;
 @NodeEntity
 public class Assignment extends AbstractEntity {
 
+    @JsonIgnore
     @Relationship(type = "ASSIGNMENT", direction = Relationship.INCOMING)
     private Set<Student> students;
 

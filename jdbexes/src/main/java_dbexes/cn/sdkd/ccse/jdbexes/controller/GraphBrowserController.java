@@ -23,10 +23,16 @@ public class GraphBrowserController extends BaseController {
         return "graph/browser";
     }
 
-    @PostMapping(value = "/get")
+    @PostMapping(value = "/getExperiments")
     @ResponseBody
-    public Object get() {
+    public Object getExperiments() {
         return neo4jService.getExperiments();
+    }
+
+    @PostMapping(value = "/getStudents")
+    @ResponseBody
+    public Object getStudents() {
+        return neo4jService.getStudents();
     }
 
 }

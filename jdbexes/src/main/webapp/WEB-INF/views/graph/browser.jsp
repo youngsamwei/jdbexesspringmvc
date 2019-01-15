@@ -7,8 +7,8 @@
 
 <style type="text/css">
     .network {
-        width: 100%;
-        height: 600px;
+        width: 99%;
+        height: 96%;
         border: 1px solid lightgray;
         background-color: #fff;
     }
@@ -17,7 +17,7 @@
 显示节点
 <input type="checkbox" name="checkbox" checked value="Person"/>Person
 <input type="checkbox" name="checkbox" checked value="Movie"/>Movie
-<div id="network_id" class="network"></div><!-- 拓扑图容器-->
+<div id="network_id" class="network" class="easyui-layout" data-options="fit:true,border:false"></div><!-- 拓扑图容器-->
 <script>
     //拓扑
     var network;
@@ -34,11 +34,12 @@
         network.moveTo({scale: 0.8});
         //先初始化一个节点
         $.ajax({
-            url:'/graph/get',
+            url:'/graph/getStudents',
             async:false,
             success: function(ret) {
                 if(ret){
-                    createNetwork({nodes:ret.nodeList});
+                    var result = $.parseJSON(ret);
+                    createNetwork(result);
                 }else{
                     layer.msg("查询失败");
                 }
@@ -131,71 +132,39 @@
 
     //扩展节点 param nodes和relation集合
     function createNetwork(param) {
-        //可以试试注释掉去重的方法看看效果
-        if(param.nodes && param.nodes.length>0){
-            //去除已存在的节点  以“id”属性为例删除重复节点，根据具体的属性自行修改
-            for(var i in network.body.data.nodes._data){
-                var nodeTemp = network.body.data.nodes._data[i];
-                param.nodes = deleteValueFromArr(param.nodes,"nodeId",nodeTemp.id);
-            }
-            if(param.nodes && param.nodes.length>0){
-                //添加节点
-                for(var i=0;i<param.nodes.length;i++){
-                    var node = param.nodes[i];
-                    //控制背景色 不同类型的节点颜色不同
-                    var background = "#97C2FC";
-                    //人
-                    if(node.name && node.name!=""){
-                        background = "#FFD86E";
-                    }
-                    //电影
-                    else if(node.title && node.title!=""){
-                        background = "#6DCE9E";
-                    }
-                    //拼接返回的结果显示在图上
-                    var label = "";
-                    for(var n in node){
-                        label += n + ":" + node[n] + "\n";
-                    }
+        for (var i = 0; i < param.length; i++){
+            var node = param[i];
+            nodes.add({
+                id: node.id,
+                label: node.name,
+                color:{
+                    background: '#FFD86E'
+                }
+            });
+            if (node.assignments && node.assignments.length>0){
+                var assignments = node.assignments;
+                for (var j = 0; j < assignments.length; j++){
                     nodes.add({
-                        id: node.nodeId,
-                        label: label,
+                        id: assignments[j].id,
+                        label : assignments[j].submitDate,
                         color:{
-                            background:background
+                            background: '#6DCE9E'
                         }
                     });
-                }
-            }else{
-                layer.msg("无扩展信息");
-            }
-        }
-        if(param.edges && param.edges.length>0){
-            //去除已存在的关系
-            for(var i in network.body.data.edges._data){
-                var edgeTemp = network.body.data.edges._data[i];
-                param.edges = deleteValueFromArr(param.edges,"edgeId",edgeTemp.id);
-            }
-            if(param.edges && param.edges.length>0) {
-                //添加关系
-                for (var i = 0; i < param.edges.length; i++) {
-                    var edge = param.edges[i];
-                    //拼接返回的结果显示在图上  根据数据库属性存储的格式进行调整
-                    var label = "";
-                    for(var n in edge.roles){
-                        label += edge.roles[n] + " ";
-                    }
                     edges.add({
-                        id: edge.edgeId,
+                        /*id: edge.edgeId,*/
                         arrows: 'to',
-                        from: edge.edgeFrom,
-                        to: edge.edgeTo,
-                        label: label,
+                        from: node.id,
+                        to: assignments[j].id,
+                        /*label: label,*/
                         font: {align: "middle"},
                         length: 150
                     });
                 }
+
             }
         }
+
     }
 
     $('input[type=checkbox][name=checkbox]').change(function(e) {
