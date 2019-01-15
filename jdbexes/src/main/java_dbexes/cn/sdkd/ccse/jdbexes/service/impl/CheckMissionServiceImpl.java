@@ -107,7 +107,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
             } catch (ExitException e) {
                 logger.error(e.getMessage());
             }
-                /*相似度通过再测试*/
+            /*相似度通过再测试*/
             experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
             CheckJob cj = new CheckJob(stuno, expno, sno, sname, experimentFilesStuService,
                     experimentStuService,

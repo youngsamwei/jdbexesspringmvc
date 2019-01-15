@@ -23,6 +23,8 @@
     <aop:aspectj-autoproxy expose-proxy="true" proxy-target-class="true"/>
     <context:annotation-config/>
 
+    <context:component-scan base-package="cn.sdkd.ccse.jdbexes.neo4j" />
+
     <!-- 扫描service -->
     <context:component-scan base-package="com.wangzhixuan.service; cn.sdkd.ccse.jsqles.service; cn.sdkd.ccse.jdbexes.service"/>
 
