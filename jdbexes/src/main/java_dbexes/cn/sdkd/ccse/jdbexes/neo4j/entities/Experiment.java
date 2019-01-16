@@ -1,6 +1,8 @@
 package cn.sdkd.ccse.jdbexes.neo4j.entities;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.DescriptiveEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
 
@@ -12,9 +14,12 @@ import java.util.Set;
  */
 @NodeEntity
 public class Experiment extends DescriptiveEntity {
-    @Relationship(type = "BELOMG_TO", direction = Relationship.INCOMING)
-    Set<Assignment> assignments;
+
     private Long experimentid;
+
+    @JsonBackReference
+    @Relationship(type = "BELONG_TO", direction = Relationship.INCOMING)
+    private Set<Assignment> assignments;
 
     public Experiment() {
     }

@@ -2,7 +2,9 @@ package cn.sdkd.ccse.jdbexes.neo4j.entities;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.AbstractEntity;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.DescriptiveEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
 
@@ -17,17 +19,17 @@ import java.util.Set;
 @NodeEntity
 public class Assignment extends AbstractEntity {
 
-    @JsonIgnore
-    @Relationship(type = "ASSIGNMENT", direction = Relationship.INCOMING)
-    private Set<Student> students;
-
-    @JsonIgnore
-    @Relationship(type = "BELOMG_TO", direction = Relationship.OUTGOING)
-    private Set<Experiment> experiments;
-
     private Long assignmentid;
 
     private Date submitDate;
+
+    @JsonBackReference
+    @Relationship(type = "ASSIGNMENT", direction = Relationship.INCOMING)
+    private Set<Student> students;
+
+    @JsonManagedReference
+    @Relationship(type = "BELONG_TO", direction = Relationship.OUTGOING)
+    private Set<Experiment> experiments;
 
     public Assignment() {
     }

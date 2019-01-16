@@ -95,7 +95,6 @@ public class ImportGraphFromDB {
                 a = new Assignment(est.getExperiment_stu_test_no().longValue(), est.getTesttime());
                 a = assignmentRepository.save(a);
             }
-
             if(a.getStudents() == null){
                 a.setStudents(new HashSet<Student>());
             }
@@ -109,27 +108,26 @@ public class ImportGraphFromDB {
             s.getAssignments().add(a);
             e.getAssignments().add(a);
 
-            assignmentRepository.save(a);
-            experimentRepository.save(e);
-            studentRepository.save(s);
+            a = assignmentRepository.save(a);
+            e = experimentRepository.save(e);
+            s = studentRepository.save(s);
             logger.debug(s.getSno() + ", " + s.getName() + ", " + e.getName() + ", " + est.getTesttime());
         }
 
     }
 
     @Test
-    public void test() {
+    public void selectStudents() {
 
-
-
-
-
-
-        /*第三步：增加所有作业*/
-
-        /*第四步：增加所有作业相似度*/
-
+        Student s = studentRepository.findBySno("201601060505");
+        logger.debug(s.getSno() + ", " + s.getName() );
     }
 
+    @Test
+    public void selectExperiments() {
+
+        cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment s = experimentRepository.findByExperimentid(6L);
+        logger.debug(s.getExperimentid() + ", " + s.getName() );
+    }
 
 }

@@ -1,6 +1,7 @@
 package cn.sdkd.ccse.jdbexes.neo4j.entities;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.NamedEntity;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
 
@@ -13,9 +14,10 @@ import java.util.Set;
 @NodeEntity
 public class Student extends NamedEntity {
     /*学号*/
-    String sno;
-    Long studentid;
+    private String sno;
+    private Long studentid;
 
+    @JsonManagedReference
     @Relationship(type="ASSIGNMENT", direction=Relationship.OUTGOING)
     Set<Assignment> assignments;
 
