@@ -62,9 +62,11 @@ public class DBMysqlUtil {
 //        System.out.println("用户名：" + dbUsername);
 //        System.out.println("密码：" + dbPassword);
         try {
-            Class.forName(dbDriver);
-            conn = DriverManager.getConnection(dbConnectionURL, dbUsername,
-                    dbPassword);
+            if (conn == null || conn.isClosed()) {
+                Class.forName(dbDriver);
+                conn = DriverManager.getConnection(dbConnectionURL, dbUsername,
+                        dbPassword);
+            }
 //            logger.info("数据库连接成功");
         } catch (Exception e) {
             logger.error("Error: DbUtil.getConnection() 获得数据库链接失败.\r\n链接类型:"
@@ -78,7 +80,7 @@ public class DBMysqlUtil {
      * 功能：执行查询语句
      */
     public ResultSet select(String sql) {
-        logger.info("Exec select sql:" + sql);
+//        logger.info("Exec select sql: " + sql);
         try {
             conn = getConnection();
             ps = conn.prepareStatement(sql);
@@ -94,7 +96,7 @@ public class DBMysqlUtil {
      * 功能：执行查询语句，获取记录数
      */
     public int getRecordCount(String sql) {
-        logger.info("Exec getRecordCount sql:" + sql);
+//        logger.info("Exec getRecordCount sql: " + sql);
         int counter = 0;
         try {
             conn = getConnection();
@@ -114,7 +116,7 @@ public class DBMysqlUtil {
 
     /*更新文件内容*/
     public int executeUpdate(String sql, Reader reader){
-        logger.info("Exec update sql:" + sql);
+//        logger.info("Exec update sql:" + sql);
         int num = 0;
         try {
             conn = getConnection();
@@ -127,14 +129,14 @@ public class DBMysqlUtil {
         } finally {
             close();
         }
-        System.out.println("影响条数：" + num);
+//        System.out.println("影响条数：" + num);
         return num;
     }
     /**
      * 功能:针对单条记录执行更新操作(新增、修改、删除)
      */
     public int executeupdate(String sql) throws Exception {
-        logger.info("Exec update sql:" + sql);
+//        logger.info("Exec update sql:" + sql);
         int num = 0;
         try {
             conn = getConnection();
@@ -146,7 +148,7 @@ public class DBMysqlUtil {
         } finally {
             close();
         }
-        System.out.println("影响条数：" + num);
+//        System.out.println("影响条数：" + num);
         return num;
     }
 
@@ -161,10 +163,10 @@ public class DBMysqlUtil {
             try {
                 result += executeupdate(sql);
             } catch (Exception e) {
-                System.out.println("查询异常：" + e.getMessage());
+                logger.error("查询异常：" + e.getMessage());
             }
         }
-        System.out.println("executeBatch Result:" + result);
+//        System.out.println("executeBatch Result:" + result);
         return result;
     }
 
@@ -172,6 +174,23 @@ public class DBMysqlUtil {
      * 功能:关闭数据库的连接
      */
     public void close() {
+        try {
+            if (rs != null) {
+                rs.close();
+            }
+            if (ps != null) {
+                ps.close();
+            }
+//            if (conn != null) {
+//                conn.close();
+//            }
+//            logger.info("关闭数据库连接成功");
+        } catch (Exception e) {
+            logger.error("执行DbUtil.close()方法发生异常，异常信息：", e);
+        }
+    }
+
+    public void closeConn(){
         try {
             if (rs != null) {
                 rs.close();

@@ -1,6 +1,9 @@
 package cn.sdkd.ccse.commons.utils;
 
+import cn.sdkd.ccse.jdbexes.mapper.ExperimentStuTestMapper;
 import cn.sdkd.ccse.jdbexes.model.Experiment;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IAssignmentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IExperimentRepository;
@@ -9,6 +12,7 @@ import cn.sdkd.ccse.jdbexes.service.IExperimentService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.wangzhixuan.model.User;
+import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
 
 import org.junit.Test;
@@ -19,10 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by sam on 2019/1/15.
@@ -38,7 +39,7 @@ public class ImportGraphFromDB {
     IUserService userService;
 
     @Autowired
-    IExperimentStuService experimentStuService;
+    ExperimentStuTestMapper experimentStuTestMapper;
 
     @Autowired
     IExperimentRepository experimentRepository;
@@ -49,35 +50,73 @@ public class ImportGraphFromDB {
 
     /*第一步：增加所有实验*/
     @Test
-    public void importExperiments(){
+    public void importExperiments() {
         List<Experiment> ls = experimentService.selectAll();
-        for (Experiment e : ls){
+        for (Experiment e : ls) {
             cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment ex = experimentRepository.findByExperimentid(e.getExpno());
-            if (ex == null){
+            if (ex == null) {
                 ex = new cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment(e.getExpno(), e.getExpname(), "");
                 experimentRepository.save(ex);
             }
         }
     }
 
-    /*第二步：增加所有学生*/
+    /*第二步：增加所有学生以及测试*/
     @Test
-    public void importAssignments(){
+    public void importAssignments() {
+        EntityWrapper<ExperimentStuTest> wrapper = new EntityWrapper<ExperimentStuTest>();
+        List<ExperimentStuTest> lses = experimentStuTestMapper.selectList(wrapper);
+        for (ExperimentStuTest est : lses) {
 
-
-        EntityWrapper<User> wrapper = new EntityWrapper<User>();
-        wrapper.where("organization_Id = {0} or organization_Id = {1}", 12, 14);
-
-        List<User> ls = userService.selectList(wrapper);
-        for (User u : ls){
-            Student s = studentRepository.findBySno(u.getLoginName());
-            if (s == null){
-                s = new Student(u.getId(), u.getLoginName(), u.getName());
-                logger.info(s.getName());
-//                studentRepository.save(s);
+            Student s = studentRepository.findByStudentid(est.getStuno().longValue());
+            /*如果学生不在图数据库中则创建*/
+            if (s == null) {
+                User u = userService.selectById(est.getStuno().longValue());
+                s = new Student(est.getStuno().longValue(), u.getLoginName(), u.getName());
+                s = studentRepository.save(s);
             }
+            if (s.getAssignments() == null){
+                s.setAssignments(new HashSet<Assignment>() );
+            }
+
+            cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment e = experimentRepository.findByExperimentid(est.getExpno().longValue());
+            /*如果实验不在图数据库中则创建*/
+            if (e == null) {
+                Experiment exp = experimentService.selectById(est.getExpno().longValue());
+                e = new cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment(est.getExpno().longValue(), exp.getExpname(), "");
+                e = experimentRepository.save(e);
+            }
+            if (e.getAssignments() == null){
+                e.setAssignments(new HashSet<Assignment>());
+            }
+
+            Assignment a = assignmentRepository.findByAssignmentid(est.getExperiment_stu_test_no().longValue());
+            if (a == null) {
+                a = new Assignment(est.getExperiment_stu_test_no().longValue(), est.getTesttime());
+                a = assignmentRepository.save(a);
+            }
+
+            if(a.getStudents() == null){
+                a.setStudents(new HashSet<Student>());
+            }
+            a.getStudents().add(s);
+
+            if (a.getExperiments() == null) {
+                a.setExperiments(new HashSet<cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment>());
+            }
+            a.getExperiments().add(e);
+
+            s.getAssignments().add(a);
+            e.getAssignments().add(a);
+
+            assignmentRepository.save(a);
+            experimentRepository.save(e);
+            studentRepository.save(s);
+            logger.debug(s.getSno() + ", " + s.getName() + ", " + e.getName() + ", " + est.getTesttime());
         }
+
     }
+
     @Test
     public void test() {
 

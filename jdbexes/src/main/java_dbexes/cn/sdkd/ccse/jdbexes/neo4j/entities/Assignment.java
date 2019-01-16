@@ -21,10 +21,11 @@ public class Assignment extends AbstractEntity {
     @Relationship(type = "ASSIGNMENT", direction = Relationship.INCOMING)
     private Set<Student> students;
 
+    @JsonIgnore
     @Relationship(type = "BELOMG_TO", direction = Relationship.OUTGOING)
-    Set<Experiment> experiments;
+    private Set<Experiment> experiments;
 
-    Long assignmentid;
+    private Long assignmentid;
 
     private Date submitDate;
 

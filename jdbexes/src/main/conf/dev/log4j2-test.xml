@@ -28,9 +28,13 @@
         <logger name="net.sf.ehcache" level="INFO"/>
         <logger name="org.springframework.cache" level="INFO"/>
         <logger name="com.wangzhixuan.commons.shiro.cache" level="INFO"/>
-        
+
+        <logger name="org.neo4j.ogm.drivers.embedded.request" level="WARN"/>
+
         <!-- 业务debug日志 -->
         <logger name="com.wangzhixuan" level="WARN"/>
+
+        <logger name="cn.sdkd.ccse.commons.utils" level="DEBUG"/>
         
         <Root level="info">
             <AppenderRef ref="Console" />
