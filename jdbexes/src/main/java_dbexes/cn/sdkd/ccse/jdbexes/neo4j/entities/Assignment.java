@@ -1,6 +1,7 @@
 package cn.sdkd.ccse.jdbexes.neo4j.entities;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.AbstractEntity;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.base.DescriptiveEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
@@ -19,6 +20,9 @@ public class Assignment extends AbstractEntity {
     @JsonIgnore
     @Relationship(type = "ASSIGNMENT", direction = Relationship.INCOMING)
     private Set<Student> students;
+
+    @Relationship(type = "BELOMG_TO", direction = Relationship.OUTGOING)
+    Set<Experiment> experiments;
 
     Long assignmentid;
 
@@ -54,5 +58,13 @@ public class Assignment extends AbstractEntity {
 
     public void setSubmitDate(Date submitDate) {
         this.submitDate = submitDate;
+    }
+
+    public Set<Experiment> getExperiments() {
+        return experiments;
+    }
+
+    public void setExperiments(Set<Experiment> experiments) {
+        this.experiments = experiments;
     }
 }

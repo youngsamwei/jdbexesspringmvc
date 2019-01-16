@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Created by sam on 2019/1/7.
  * <p>
- * 从蓝墨云班课的作业导出中导入。
+ * 从蓝墨云班课的作业导出中导入至数据库。
  */
 public class ImportFromLanMo {
     private String rootDir;
@@ -56,14 +56,14 @@ public class ImportFromLanMo {
     }
 
     public void run() throws Exception {
+        /*先从评分详情中获取学生提交作业的信息*/
         List<TaskSubmitDesc> listTaskDesc = resolveTaskDesc();
 
+        /*从数据库中获取实验所需要提交的文件列表*/
         List<ExperimentFile> expFiles = getExpFiles();
 
-//        for(String s : expFiles){
-//            System.out.println(s);
-//        }
         for (TaskSubmitDesc tsd : listTaskDesc) {
+            /*获取学号对应的用户在数据库中的编号*/
             Long stuno = getStuno(tsd.sno);
             if (stuno < 0) {
                 System.out.println("not in mysql: " + tsd.sname + ", " + tsd.sno);

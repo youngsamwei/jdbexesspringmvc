@@ -70,7 +70,7 @@ public class JPlagServiceImpl implements IJPlagService {
         File root = new File(this.submitFilesRootDir);
         /*先遍历每个学生的文件夹*/
         for (File stuf : root.listFiles()) {
-            /*在遍历每个实验文件夹*/
+            /*再遍历每个实验文件夹*/
             if (stuf.isDirectory()) {
                 for (File expf : stuf.listFiles()) {
                     ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expf.getName());
