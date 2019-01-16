@@ -17,9 +17,9 @@ public class Student extends NamedEntity {
     private String sno;
     private Long studentid;
 
-    @JsonManagedReference
-    @Relationship(type="ASSIGNMENT", direction=Relationship.OUTGOING)
-    Set<Assignment> assignments;
+//    @JsonManagedReference
+    @Relationship(type="SUBMIT", direction=Relationship.OUTGOING)
+    private Set<Assignment> assignments;
 
     public Student() {
     }
