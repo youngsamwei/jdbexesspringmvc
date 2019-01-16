@@ -17,8 +17,8 @@ public class Experiment extends DescriptiveEntity {
 
     private Long experimentid;
 
-//    @JsonBackReference
-    @Relationship(type = "BELONGTO", direction = Relationship.INCOMING)
+    @JsonBackReference
+    @Relationship(type = "BELONGTO", direction = Relationship.OUTGOING)
     private Set<Assignment> assignments;
 
     public Experiment() {

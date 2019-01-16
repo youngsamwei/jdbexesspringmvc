@@ -27,6 +27,8 @@
     var edges;
     // 已扩展的节点
     var nodeExtendArr = new Array();
+    //所有的实验集合
+    var exps = [];
 
     $(function () {
         init();
@@ -130,6 +132,15 @@
         });
     }
 
+    function experiment_exists(exps, exp){
+        for (var i = 0; i < exps.length; i++){
+            if (exps[i].id == exp.id){
+                return true;
+            }
+        }
+        return false;
+    }
+
     //扩展节点 param nodes和relation集合
     function createNetwork(param) {
         for (var i = 0; i < param.length; i++){
@@ -143,6 +154,7 @@
             });
             if (node.assignments && node.assignments.length>0){
                 var assignments = node.assignments;
+
                 for (var j = 0; j < assignments.length; j++){
                     nodes.add({
                         id: assignments[j].id,
@@ -160,6 +172,24 @@
                         font: {align: "middle"},
                         length: 150
                     });
+                    for (var k = 0; k < assignments[j].experiments.length; k++){
+                        if (!experiment_exists(exps, assignments[j].experiments[k])){
+                            exps.push(assignments[j].experiments[k]);
+                            nodes.add({
+                            id:assignments[j].experiments[k].id,
+                            lable:assignments[j].experiments[k].name
+
+                            });
+                        }
+                        edges.add({
+                            arrows:'to',
+                            from: assignments[j].experiments[k].id,
+                            to:assignments[j].id,
+                            font: {align: "middle"},
+                            length: 150
+                        });
+
+                    }
                 }
 
             }

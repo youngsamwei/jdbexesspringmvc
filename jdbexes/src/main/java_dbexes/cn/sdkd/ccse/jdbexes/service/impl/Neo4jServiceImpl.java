@@ -27,10 +27,11 @@ public class Neo4jServiceImpl implements INeo4jService {
 
     @Override
     public Object getStudents() {
-        List<Student> ls = new ArrayList<Student>();
-        Iterator<Student> it = studentRepository.findAll().iterator();
-        while (it.hasNext()) {
-            Student s = it.next();
+        return studentRepository.selectAll();
+//        List<Student> ls = new ArrayList<Student>();
+//        Iterator<Student> it = studentRepository.findAll().iterator();
+//        while (it.hasNext()) {
+//            Student s = it.next();
 //
 //            Iterator<Assignment> ia = s.getAssignments().iterator();
 //            while (ia.hasNext()) {
@@ -41,9 +42,9 @@ public class Neo4jServiceImpl implements INeo4jService {
 //                    }
 //                }
 //            }
-            ls.add(s);
-        }
-        return ls;
+//            ls.add(s);
+//        }
+//        return ls;
     }
 
     @Override

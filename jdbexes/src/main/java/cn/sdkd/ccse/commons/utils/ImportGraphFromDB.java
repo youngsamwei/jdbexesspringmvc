@@ -99,6 +99,7 @@ public class ImportGraphFromDB {
                 a.setStudents(new HashSet<Student>());
             }
             a.getStudents().add(s);
+            a = assignmentRepository.save(a);
 
             if (a.getExperiments() == null) {
                 a.setExperiments(new HashSet<cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment>());
@@ -108,9 +109,10 @@ public class ImportGraphFromDB {
             s.getAssignments().add(a);
             e.getAssignments().add(a);
 
-            a = assignmentRepository.save(a);
             e = experimentRepository.save(e);
             s = studentRepository.save(s);
+            a = assignmentRepository.save(a);
+
             logger.debug(s.getSno() + ", " + s.getName() + ", " + e.getName() + ", " + est.getTesttime());
         }
 
@@ -119,7 +121,10 @@ public class ImportGraphFromDB {
     @Test
     public void selectStudents() {
 
-        Student s = studentRepository.findBySno("201601060505");
+        Student s = studentRepository.findBySnoDepth("201601060505");
+
+        List<Student> ls = studentRepository.selectAll();
+
         logger.debug(s.getSno() + ", " + s.getName() );
     }
 
@@ -128,6 +133,13 @@ public class ImportGraphFromDB {
 
         cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment s = experimentRepository.findByExperimentid(6L);
         logger.debug(s.getExperimentid() + ", " + s.getName() );
+    }
+
+    @Test
+    public void selectAssignments() {
+
+        Assignment a = assignmentRepository.findOne(10L);
+        logger.debug(a.getAssignmentid() + "" );
     }
 
 }
