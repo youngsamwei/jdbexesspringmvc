@@ -28,11 +28,13 @@ public class ImportFromLanMo {
 
     public static void main(String[] args) {
 
+        Long exp2no = 7L;
         String exp2RootDir = "F:\\云班课作业 2018\\计算机16-1，2，3-数据库系统-课程设计_实验2_实现u_第3次";
+        ImportFromLanMo iflm = new ImportFromLanMo(exp2no, exp2RootDir, "评分详情.xlsx");
 
-        Long exp3no = 6L;
-        String exp3RootDir = "F:\\云班课作业 2018\\计算机16-1，2，3-数据库系统-课程设计_实验3_实现D_第5次";
-        ImportFromLanMo iflm = new ImportFromLanMo(exp3no, exp3RootDir, "评分详情.xlsx");
+//        Long exp3no = 6L;
+//        String exp3RootDir = "F:\\云班课作业 2018\\计算机16-1，2，3-数据库系统-课程设计_实验3_实现D_第5次";
+//        ImportFromLanMo iflm = new ImportFromLanMo(exp3no, exp3RootDir, "评分详情.xlsx");
 
         try {
             iflm.run();
