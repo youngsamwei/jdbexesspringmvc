@@ -1,8 +1,6 @@
 package cn.sdkd.ccse.jdbexes.model;
 
-import com.baomidou.mybatisplus.annotations.TableField;
 import com.baomidou.mybatisplus.annotations.TableId;
-import org.neo4j.register.Register;
 
 import java.sql.Timestamp;
 

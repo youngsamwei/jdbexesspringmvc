@@ -31,6 +31,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by sam on 2019/1/4.
+ *
+ * 测试任务
+ * 测试每个提交
  */
 @Service
 public class CheckMissionServiceImpl implements ICheckMissionService {
@@ -185,7 +188,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     * 若出错，则重启线程*/
     @Override
     public void monitorJob() {
-        logger.warn("线程池中线程数目：" + threadPoolExecutor.getPoolSize()
+        logger.warn("测试任务线程池中线程数目：" + threadPoolExecutor.getPoolSize()
                 + "，队列中等待执行的任务数目：" + threadPoolExecutor.getQueue().size()
                 + "，已执行完成的任务数目：" + threadPoolExecutor.getCompletedTaskCount());
     }

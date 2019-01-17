@@ -2,11 +2,13 @@ package cn.sdkd.ccse.jdbexes.neo4j.entities;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.AbstractEntity;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.DescriptiveEntity;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.relationships.Similarity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
+import org.neo4j.ogm.annotation.typeconversion.DateString;
 
 import java.util.Date;
 import java.util.Set;
@@ -21,6 +23,7 @@ public class Assignment extends AbstractEntity {
 
     private Long assignmentid;
 
+    @DateString
     private Date submitDate;
 
     @JsonBackReference
@@ -30,6 +33,9 @@ public class Assignment extends AbstractEntity {
     @JsonManagedReference
     @Relationship(type = "BELONGTO", direction = Relationship.INCOMING)
     private Set<Experiment> experiments;
+
+    @Relationship(type = "SIMILARITY", direction = Relationship.UNDIRECTED)
+    private Set<Similarity> similarities            ;
 
     public Assignment() {
     }
@@ -69,5 +75,13 @@ public class Assignment extends AbstractEntity {
 
     public void setExperiments(Set<Experiment> experiments) {
         this.experiments = experiments;
+    }
+
+    public Set<Similarity> getSimilarities() {
+        return similarities;
+    }
+
+    public void setSimilarities(Set<Similarity> similarities) {
+        this.similarities = similarities;
     }
 }

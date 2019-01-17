@@ -1,17 +1,16 @@
 package cn.sdkd.ccse.jdbexes.service.impl;
 
-import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
-import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IAssignmentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IExperimentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IStudentRepository;
 import cn.sdkd.ccse.jdbexes.service.INeo4jService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import scala.reflect.internal.Trees;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by sam on 2019/1/14.
