@@ -1,12 +1,15 @@
 package cn.sdkd.ccse.jdbexes.model;
 
+import com.baomidou.mybatisplus.annotations.TableId;
+
 import java.sql.Blob;
 import java.sql.Timestamp;
 
 /**
  * Created by sam on 2019/1/4.
  */
-public class ExperimentFilesStu {
+public class ExperimentFilesStu  implements java.io.Serializable {
+    @TableId
     private Integer expfilestuno;
     private Integer fileno;
     private Integer expstuno;

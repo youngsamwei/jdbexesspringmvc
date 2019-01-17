@@ -1,6 +1,12 @@
 package cn.sdkd.ccse.jdbexes.service.impl;
 
-import cn.sdkd.ccse.jdbexes.service.IJPlagService;
+import cn.sdkd.ccse.commons.utils.FileUtils;
+import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStuTestFiles;
+import cn.sdkd.ccse.jdbexes.service.*;
+import com.baomidou.mybatisplus.mapper.EntityWrapper;
+import com.wangzhixuan.model.User;
 import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
 import jplag.*;
@@ -13,10 +19,12 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.IOException;
+import javax.annotation.PostConstruct;
+import java.io.*;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -31,7 +39,16 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Autowired
     private IUserService userService;
+
+    @Autowired
+    private IExperimentStuTestService experimentStuTestService;
+    @Autowired
+    private IExperimentStuTestFilesService experimentStuTestFilesService;
+    @Autowired
+    private IExperimentFilesStuService experimentFilesStuService;
+
     private String submitFilesRootDir;
+    private String submitTempDir;
     private Properties props = new Properties();
 
     private jplag.options.Options options;
@@ -51,6 +68,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
         initProperties();
         this.submitFilesRootDir = props.getProperty("submitFilesRootDir");
+        this.submitTempDir = props.getProperty("submitTempDir");
         this.poolSize = Integer.parseInt(props.getProperty("poolSize"));
         this.threadPoolExecutor = new ThreadPoolExecutor(this.poolSize, this.poolSize,
                 0L, TimeUnit.MILLISECONDS,
@@ -66,34 +84,79 @@ public class JPlagServiceImpl implements IJPlagService {
         this.program = new Program(this.options);
         this.gSTiling = new GSTiling(this.program);
 
-        /*初始化已有作业*/
-        File root = new File(this.submitFilesRootDir);
-        /*先遍历每个学生的文件夹*/
-        for (File stuf : root.listFiles()) {
-            /*再遍历每个实验文件夹*/
-            if (stuf.isDirectory()) {
-                for (File expf : stuf.listFiles()) {
-                    ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expf.getName());
-                    if (expSubmissions == null) {
-                        expSubmissions = new ConcurrentHashMap<String, Submission>();
-                        submissions.put(expf.getName(), expSubmissions);
+//        initSubmissions();
+    }
+
+    @PostConstruct
+    /*构造函数完成后开始:初始化已有作业*/
+    private void initSubmissions() throws ExitException {
+
+        EntityWrapper<ExperimentStuTest> ew = new EntityWrapper<ExperimentStuTest>();
+        /*先读取每个测试*/
+        List<ExperimentStuTest> lest = experimentStuTestService.selectList(ew);
+
+        for (ExperimentStuTest est : lest){
+            initOneTest(est);
+        }
+
+        for (Map.Entry<String, ConcurrentHashMap<String, Submission>> entry : this.submissions.entrySet()) {
+            logger.info("* 实验" + entry.getKey() + ": " + entry.getValue().size() + "份.");
+        }
+    }
+
+    private void initOneTest(ExperimentStuTest est) throws ExitException {
+        User u = userService.selectById(est.getStuno());
+            /*在读取每个测试的代码文件*/
+        List<ExperimentStuTestFiles> lestf = experimentStuTestFilesService.selectListByTestno(est.getExperiment_stu_test_no().longValue());
+        String path = this.submitTempDir + "/test-" + UUID.randomUUID().toString() + "/";
+        File expf = new File(path);
+        if (!expf.exists()){
+            expf.mkdirs();
+        }
+        for (ExperimentStuTestFiles estf : lestf){
+            ExperimentFilesStu efs = experimentFilesStuService.selectById(estf.getExperiment_files_stu_no());
+            OutputStreamWriter op = null;
+            try {
+                String fileName = path + efs.getFileno() + ".c";
+                op = new OutputStreamWriter(new FileOutputStream(fileName), "utf-8");
+                op.append(efs.getFile_content());
+                op.flush();
+                op.close();
+            } catch (UnsupportedEncodingException e) {
+                logger.error(e.getMessage());
+            } catch (FileNotFoundException e) {
+                logger.error(e.getMessage());
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }finally {
+                try {
+                    if (op != null) {
+                        op.close();
                     }
-                    Submission submission = new Submission(stuf.getName(), expf, false, this.program, this.program.get_language());
-                    submission.parse();
-                    expSubmissions.put(stuf.getName(), submission);
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
                 }
             }
         }
-        for(Map.Entry<String, ConcurrentHashMap<String, Submission>> entry : this.submissions.entrySet()){
-            logger.info("* 实验" + entry.getKey() + ": " + entry.getValue().size() + "份.");
-        }
 
+        if (expf.exists()) {
+            ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(est.getExpno() + "");
+            if (expSubmissions == null) {
+                expSubmissions = new ConcurrentHashMap<String, Submission>();
+                submissions.put(est.getExpno() + "", expSubmissions);
+            }
+            String key = u.getLoginName() + "_" + u.getName();
+            Submission submission = new Submission(key, expf, false, this.program, this.program.get_language());
+            submission.parse();
+            expSubmissions.put(key, submission);
+            FileUtils.removeDir(path);
+        }
     }
 
     @Override
     public Submission getSubmission(String expno, String name) {
         ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expno);
-        if (expSubmissions != null){
+        if (expSubmissions != null) {
             return expSubmissions.get(name);
         }
         return null;
@@ -102,7 +165,7 @@ public class JPlagServiceImpl implements IJPlagService {
     @Override
     public void putSubmission(String expno, String name, Submission submission) {
         ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expno);
-        if (expSubmissions == null){
+        if (expSubmissions == null) {
             expSubmissions = new ConcurrentHashMap<String, Submission>();
             submissions.put(expno, expSubmissions);
         }
@@ -115,21 +178,23 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Override
     public void updateSubmission(String expno, String sno, String sname) throws ExitException {
-        File f = new File(this.submitFilesRootDir + "/"  + sno + "_" + sname + "/" + expno + "/");
+        File f = new File(this.submitFilesRootDir + "/" + sno + "_" + sname + "/" + expno + "/");
         Submission submission = new Submission(sno + "_" + sname, f, false, this.program, this.program.get_language());
         submission.parse();
 
         this.putSubmission(expno + "", sno + "_" + sname, submission);
-    };
+    }
+
+    ;
 
     @Override
-    public boolean compareSubmission(String expno, String sno, String sname){
+    public boolean compareSubmission(String expno, String sno, String sname) {
         ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expno);
         Submission submission = expSubmissions.get(sno + "_" + sname);
         SortedVector<AllMatches> avgmatches = new SortedVector<AllMatches>(new AllMatches.AvgComparator());
         for (Map.Entry<String, Submission> entry : expSubmissions.entrySet()) {
 
-            if (entry.getKey().equalsIgnoreCase(submission.name)){
+            if (entry.getKey().equalsIgnoreCase(submission.name)) {
                 continue;
             }
             if (entry.getValue().struct != null) {
@@ -144,12 +209,14 @@ public class JPlagServiceImpl implements IJPlagService {
         for (AllMatches m : avgmatches) {
             logger.info("expno:" + expno + "_" + m.subA.name + " - " + m.subB.name + " : " + m.percent() + ", a:" + m.percentA() + ", b:" + m.percentB() + ", max:" + m.percentMaxAB() + ", min:" + m.percentMinAB());
         }
-        if (avgmatches.size() <=0 ){
+        if (avgmatches.size() <= 0) {
             return true;
-        }else {
-            return (avgmatches.get(0).percent() < simPassedThreshold) ;
+        } else {
+            return (avgmatches.get(0).percent() < simPassedThreshold);
         }
-    };
+    }
+
+    ;
 
     @Override
     public void compare(String expno, Submission submission) {

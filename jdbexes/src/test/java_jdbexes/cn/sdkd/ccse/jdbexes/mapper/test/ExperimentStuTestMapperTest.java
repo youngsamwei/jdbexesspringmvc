@@ -31,6 +31,10 @@ public class ExperimentStuTestMapperTest {
     ExperimentStuTestFilesMapper experimentStuTestFilesMapper;
 
     @Test
+    public void test(){
+
+    }
+    @Test
     public void insertExperimentStuTest() {
         ExperimentStuTest est = new ExperimentStuTest();
         est.setExpno(1);

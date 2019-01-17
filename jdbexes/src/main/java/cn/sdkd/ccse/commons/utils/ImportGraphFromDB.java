@@ -48,6 +48,10 @@ public class ImportGraphFromDB {
     @Autowired
     IAssignmentRepository assignmentRepository;
 
+    @Test
+    public void test(){
+
+    }
     /*第一步：增加所有实验*/
     @Test
     public void importExperiments() {
