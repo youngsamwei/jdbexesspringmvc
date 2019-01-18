@@ -2,6 +2,7 @@ package cn.sdkd.ccse.jdbexes.neo4j.entities.relationships;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.base.AbstractEntity;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.neo4j.ogm.annotation.EndNode;
 import org.neo4j.ogm.annotation.RelationshipEntity;
 import org.neo4j.ogm.annotation.StartNode;
@@ -11,9 +12,11 @@ import java.util.Date;
 
 @RelationshipEntity(type="SIMILARITY")
 public class Similarity extends AbstractEntity {
+   @JsonManagedReference
    @StartNode
    private Assignment a1;
 
+   @JsonManagedReference
    @EndNode
    private Assignment a2;
 
@@ -54,5 +57,13 @@ public class Similarity extends AbstractEntity {
 
    public void setTestDate(Date testDate) {
       this.testDate = testDate;
+   }
+
+   public Float getSimValue() {
+      return simValue;
+   }
+
+   public void setSimValue(Float simValue) {
+      this.simValue = simValue;
    }
 }

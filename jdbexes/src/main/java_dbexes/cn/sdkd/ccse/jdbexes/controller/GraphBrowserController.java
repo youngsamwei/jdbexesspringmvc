@@ -2,6 +2,7 @@ package cn.sdkd.ccse.jdbexes.controller;
 
 import cn.sdkd.ccse.jdbexes.service.INeo4jService;
 import com.wangzhixuan.commons.base.BaseController;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +34,12 @@ public class GraphBrowserController extends BaseController {
     @ResponseBody
     public Object getStudents() {
         return neo4jService.getStudents();
+    }
+
+    @RequestMapping(value = "/getSimilarities")
+    @ResponseBody
+    public Object getSimilarities(@Param("simValue") Float simValue) {
+        return neo4jService.getSimilarities(simValue);
     }
 
 }

@@ -11,7 +11,7 @@ import org.springframework.data.neo4j.repository.GraphRepository;
 public interface IAssignmentRepository extends GraphRepository<Assignment> {
     Assignment findByAssignmentid(Long assignmentid);
 
-    @Query("MATCH (a1:Assignment {assignmentid:{0}})-[r:SIMILARITY]-(a2:Assignment {assignmentid:{1}}) RETURN a1")
+    @Query("MATCH (a1:Assignment {assignmentid:{0}})-[r:SIMILARITY]->(a2:Assignment {assignmentid:{1}}) RETURN a1,r")
     Assignment findBy2ExperimentStuTestNo(Long experimentStuTestNoA, Long experimentStuTestNoB);
 
 

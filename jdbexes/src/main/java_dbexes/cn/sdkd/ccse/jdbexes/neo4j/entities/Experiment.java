@@ -45,4 +45,5 @@ public class Experiment extends DescriptiveEntity {
     public void setAssignments(Set<Assignment> assignments) {
         this.assignments = assignments;
     }
+
 }

@@ -80,7 +80,7 @@ public class JPlagServiceImpl implements IJPlagService {
         this.submitFilesRootDir = props.getProperty("submitFilesRootDir");
         this.submitTempDir = props.getProperty("submitTempDir");
         this.poolSize = Integer.parseInt(props.getProperty("poolSize"));
-        this.poolSize = 1;
+//        this.poolSize = 1;
         this.threadPoolExecutor = new ThreadPoolExecutor(this.poolSize, this.poolSize,
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>());
@@ -97,7 +97,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     }
 
-    @PostConstruct
+//    @PostConstruct
     /*构造函数完成后开始:初始化已有作业*/
     private void initSubmissions() throws ExitException {
 
@@ -161,7 +161,7 @@ public class JPlagServiceImpl implements IJPlagService {
             try {
                 submission.parse();
                 /*parse出现错误*/
-                if (submission.struct != null) {
+                if (submission.struct != null ) {
                     expSubmissions.put(key, submission);
 
                     JPlagJob jPlagJob = new JPlagJob(this, est.getExpno().longValue(), submission, assignmentRepository, this.similarityRepository);
@@ -242,8 +242,15 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Override
     public float compareSubmission(Submission a, Submission b) {
-        AllMatches match = this.gSTiling.compare(a, b);
-        return match.percent();
+        AllMatches match ;
+        try {
+            match = this.gSTiling.compare(a, b);
+            return match.percent();
+        }catch(Exception e){
+            logger.error(e.getMessage());
+        }
+
+        return -1;
     }
 
     @Override
@@ -323,7 +330,7 @@ class JPlagJob implements Runnable {
 
         ConcurrentHashMap<String, Submission> submissions = jPlagService.getSubmission(this.expno + "");
         Assignment a1 = this.assignmentRepository.findByAssignmentid(this.experimentStuTestNo);
-        if (experimentStuTestNo == 1245){
+        if (experimentStuTestNo == 1245) {
             logger.info("pause.");
         }
         for (Map.Entry<String, Submission> entry : submissions.entrySet()) {
@@ -337,10 +344,10 @@ class JPlagJob implements Runnable {
             float sim = this.jPlagService.compareSubmission(this.submission, entry.getValue());
 //            Assignment assignment = this.assignmentRepository.findBy2ExperimentStuTestNo(this.experimentStuTestNo,
 //                    tExperimentStuTestNo);
-            Similarity similarity = this.similarityRepository.findSimilarityBy2ExperimentStuTestNo(this.experimentStuTestNo,
+            List<Similarity> sims = this.similarityRepository.findSimilarityBy2ExperimentStuTestNo(this.experimentStuTestNo,
                     tExperimentStuTestNo);
             /*不存在联系*/
-            if (similarity == null) {
+            if (sims.size() == 0) {
 
                 Assignment a2 = this.assignmentRepository.findByAssignmentid(tExperimentStuTestNo);
                 if (a1 != null && a2 != null) {
@@ -366,7 +373,7 @@ class JPlagJob implements Runnable {
 //                        a1 = this.assignmentRepository.save(a1);
 //                        a2 = this.assignmentRepository.save(a2);
                         logger.debug("create edge " + this.submission.name + " : " + entry.getValue().name + ", " + sim);
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         logger.error(e.getMessage() + " create edge " + this.submission.name + " : " + entry.getValue().name + ", " + sim);
                     }
 

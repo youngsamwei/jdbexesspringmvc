@@ -34,6 +34,7 @@ public class Assignment extends AbstractEntity {
     @Relationship(type = "BELONGTO", direction = Relationship.INCOMING)
     private Set<Experiment> experiments;
 
+    @JsonBackReference
     @Relationship(type = "SIMILARITY", direction = Relationship.UNDIRECTED)
     private Set<Similarity> similarities            ;
 
@@ -84,4 +85,6 @@ public class Assignment extends AbstractEntity {
     public void setSimilarities(Set<Similarity> similarities) {
         this.similarities = similarities;
     }
+
+
 }

@@ -3,6 +3,7 @@ package cn.sdkd.ccse.jdbexes.service.impl;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IAssignmentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IExperimentRepository;
+import cn.sdkd.ccse.jdbexes.neo4j.repositories.ISimilarityRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IStudentRepository;
 import cn.sdkd.ccse.jdbexes.service.INeo4jService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,13 @@ public class Neo4jServiceImpl implements INeo4jService {
     private IAssignmentRepository assignmentRepository;
     @Autowired
     private IExperimentRepository experimentRepository;
+    @Autowired
+    private ISimilarityRepository similarityRepository;
+
+    @Override
+    public Object getSimilarities(float sim) {
+        return similarityRepository.findSimilarityByValue(sim);
+    }
 
     @Override
     public Object getStudents() {
@@ -55,4 +63,5 @@ public class Neo4jServiceImpl implements INeo4jService {
         }
         return ls;
     }
+
 }
