@@ -79,7 +79,7 @@ public class JPlagServiceImpl implements IJPlagService {
         initProperties();
         this.submitFilesRootDir = props.getProperty("submitFilesRootDir");
         this.submitTempDir = props.getProperty("submitTempDir");
-        this.poolSize = Integer.parseInt(props.getProperty("poolSize"));
+        this.poolSize = Integer.parseInt(props.getProperty("jplgPoolSize"));
 //        this.poolSize = 1;
         this.threadPoolExecutor = new ThreadPoolExecutor(this.poolSize, this.poolSize,
                 0L, TimeUnit.MILLISECONDS,
@@ -97,7 +97,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     }
 
-        @PostConstruct
+    @PostConstruct
     /*构造函数完成后开始:初始化已有作业*/
     private void initSubmissions() throws ExitException {
 
@@ -329,9 +329,10 @@ class JPlagJob implements Runnable {
     public void run() {
 
         ConcurrentHashMap<String, Submission> submissions = jPlagService.getSubmission(this.expno + "");
+
         Assignment a1 = this.assignmentRepository.findByAssignmentid(this.experimentStuTestNo);
-        if (experimentStuTestNo == 1245) {
-            logger.info("pause.");
+        if (a1 == null) {
+            return;
         }
         for (Map.Entry<String, Submission> entry : submissions.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(this.submission.name)) {
@@ -342,31 +343,19 @@ class JPlagJob implements Runnable {
             String tsname = keys[1];
             Long tExperimentStuTestNo = Long.parseLong(keys[2]);
             float sim = this.jPlagService.compareSubmission(this.submission, entry.getValue());
-//            Assignment assignment = this.assignmentRepository.findBy2ExperimentStuTestNo(this.experimentStuTestNo,
-//                    tExperimentStuTestNo);
+
+            /*这个查询无关方向*/
             List<Similarity> sims = this.similarityRepository.findSimilarityBy2ExperimentStuTestNo(this.experimentStuTestNo,
                     tExperimentStuTestNo);
             /*不存在联系*/
             if (sims.size() == 0) {
 
                 Assignment a2 = this.assignmentRepository.findByAssignmentid(tExperimentStuTestNo);
-                if (a1 != null && a2 != null) {
-                    if (a1.getSimilarities() == null) {
-                        Set<Similarity> similarities = new HashSet<Similarity>();
-                        a1.setSimilarities(similarities);
-                    }
-                    if (a2.getSimilarities() == null) {
-                        Set<Similarity> similarities = new HashSet<Similarity>();
-                        a2.setSimilarities(similarities);
-                    }
-
-//                    Similarity sim_relation = new Similarity(a1, a2, new Date(), sim);
-                    /*保存联系，若不保存，则会出现一致性错误*/
-//                    sim_relation = similarityRepository.save(sim_relation);
-
-//                    a1.getSimilarities().add(sim_relation);
-//                    a2.getSimilarities().add(sim_relation);
-
+                if (a2 != null) {
+//                    if ((sname.equalsIgnoreCase("谭婷")||tsname.equalsIgnoreCase("谭婷"))
+//                            &&(sname.equalsIgnoreCase("班鑫")||tsname.equalsIgnoreCase("班鑫"))){
+//                        logger.debug(" pause ");
+//                    }
                     try {
                         if (a1.getSubmitDate().after(a2.getSubmitDate())) {
                             similarityRepository.createSimilarity(this.experimentStuTestNo,
@@ -375,8 +364,7 @@ class JPlagJob implements Runnable {
                             similarityRepository.createSimilarity(tExperimentStuTestNo,
                                     this.experimentStuTestNo, sdf.format(new Date()), sim);
                         }
-//                        a1 = this.assignmentRepository.save(a1);
-//                        a2 = this.assignmentRepository.save(a2);
+
                         logger.debug("create edge " + this.submission.name + " : " + entry.getValue().name + ", " + sim);
                     } catch (Exception e) {
                         logger.error(e.getMessage() + " create edge " + this.submission.name + " : " + entry.getValue().name + ", " + sim);

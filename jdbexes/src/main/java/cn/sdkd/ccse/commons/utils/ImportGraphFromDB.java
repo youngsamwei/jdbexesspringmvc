@@ -59,6 +59,31 @@ public class ImportGraphFromDB {
 
     @Test
     public void test() {
+        List<Similarity> ls = this.similarityRepository.deleteSimilaritiesByStudentName("谭婷", "班鑫");
+
+        logger.debug(ls.size() + "");
+    }
+
+    @Test
+    public void testFindSimilaritiesByQuery() {
+        SimpleDateFormat sdf = new SimpleDateFormat(DateString.ISO_8601);
+
+        List<Similarity> ls = this.similarityRepository.checkSimilarities();
+        for (Similarity s : ls) {
+            logger.debug(sdf.format(s.getA1().getSubmitDate()) + " : " + sdf.format(s.getA2().getSubmitDate()) + " : "
+                    + (s.getA1().getSubmitDate().after(s.getA2().getSubmitDate()) ? "after" : "not after"));
+        }
+        logger.debug(ls.size() + "");
+
+    }
+
+    @Test
+    public void testSimilarityDate() {
+        List<Similarity> ls = this.similarityRepository.findSimilaritiesByStudentName(90f, "谭婷", "班鑫");
+//        for (Similarity s : ls){
+//            this.similarityRepository.delete(s.getId());
+//        }
+        logger.debug(ls.size() + "");
 
     }
 
@@ -94,7 +119,7 @@ public class ImportGraphFromDB {
 //        Assignment a2 = this.assignmentRepository.findByAssignmentid(a2id);
 //        if (a1 != null && a2 != null) {
 
-        Similarity s =  similarityRepository.createSimilarity(a1id, a2id, sdf.format(new Date()), new Float(20.0));
+        Similarity s = similarityRepository.createSimilarity(a1id, a2id, sdf.format(new Date()), new Float(20.0));
 
 //        }
 //        a1 = this.assignmentRepository.findByAssignmentid(a1id);

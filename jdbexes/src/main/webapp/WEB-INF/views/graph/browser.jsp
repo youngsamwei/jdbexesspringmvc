@@ -194,6 +194,7 @@
                 processAssignment(a2);
             }
             var value = sim.simValue.toFixed(2) + "";
+            var length = 150 - sim.simValue.toFixed(0);
             edges.add({
                 /*id: edge.edgeId,*/
                 arrows: 'to',
@@ -201,7 +202,7 @@
                 to: a2.id,
                 label: value,
                 font: {align: "middle"},
-                length: 150
+                length: length
             });
         }
     }
