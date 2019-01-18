@@ -148,6 +148,26 @@
         return false;
     }
 
+    function processAssignment(assignment){
+        if (assignment.students){
+            var student  = assignment.students[0];
+            if(!node_exists(student)){
+                nodes.add({
+                    id : student.id,
+                    label : student.name
+                });
+            }
+            edges.add({
+                 /*id: edge.edgeId,*/
+                 arrows: 'to',
+                 from: student.id,
+                 to: assignment.id,
+                 /*label: sim.simValue,*/
+                 font: {align: "middle"},
+                 length: 150
+            });
+        }
+    }
     function createSimilarityNetwork(sims){
         for (var i = 0; i < sims.length; i++){
             var sim = sims[i];
@@ -161,6 +181,7 @@
                         background: '#FFD86E'
                     }
                 });
+                processAssignment(a1);
             }
             if (!node_exists(a2)){
                 nodes.add({
@@ -170,13 +191,15 @@
                         background: '#FFD86E'
                     }
                 });
+                processAssignment(a2);
             }
+            var value = sim.simValue.toFixed(2) + "";
             edges.add({
                 /*id: edge.edgeId,*/
                 arrows: 'to',
                 from: a1.id,
                 to: a2.id,
-                label: sim.simValue,
+                label: value,
                 font: {align: "middle"},
                 length: 150
             });

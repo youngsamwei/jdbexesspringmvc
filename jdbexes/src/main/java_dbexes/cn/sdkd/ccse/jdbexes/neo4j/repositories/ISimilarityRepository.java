@@ -24,9 +24,10 @@ public interface ISimilarityRepository extends GraphRepository<Similarity>  {
             " delete r")
     Similarity deleteSimilarity(Long experimentStuTestNoA, Long experimentStuTestNoB);
 
-    @Query("MATCH (a1:Assignment)-[r:SIMILARITY]->(a2:Assignment) where r.simValue >= {sim} return r, a1, a2 order by r.simValue desc")
-    List<Similarity> findSimilarityByValue(@Param("sim")Float sim);
-    //where r.simValue >= {sim}
+    @Query("MATCH (a1:Assignment)-[r:SIMILARITY]->(a2:Assignment), " +
+            " (s1:Student)-[r2:SUBMIT]-(a1), (s2:Student)-[r3:SUBMIT]-(a2)" +
+            " where r.simValue >= {simValue}  return r, a1, a2, r2, r3,s1, s2 order by r.simValue desc")
+    List<Similarity> findBySimValue(@Param("simValue")Float simValue);
 
     @Query("MATCH (a1:Assignment)-[r:SIMILARITY]->(a2:Assignment) return r, a1, a2 order by r.simValue desc")
     List<Similarity> findAllSimilarities();

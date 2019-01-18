@@ -26,7 +26,7 @@ public class Assignment extends AbstractEntity {
     @DateString
     private Date submitDate;
 
-    @JsonBackReference
+    @JsonManagedReference
     @Relationship(type = "SUBMIT", direction = Relationship.INCOMING)
     private Set<Student> students;
 

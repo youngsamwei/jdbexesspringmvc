@@ -97,7 +97,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     }
 
-//    @PostConstruct
+        @PostConstruct
     /*构造函数完成后开始:初始化已有作业*/
     private void initSubmissions() throws ExitException {
 
@@ -161,7 +161,7 @@ public class JPlagServiceImpl implements IJPlagService {
             try {
                 submission.parse();
                 /*parse出现错误*/
-                if (submission.struct != null ) {
+                if (submission.struct != null) {
                     expSubmissions.put(key, submission);
 
                     JPlagJob jPlagJob = new JPlagJob(this, est.getExpno().longValue(), submission, assignmentRepository, this.similarityRepository);
@@ -242,11 +242,11 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Override
     public float compareSubmission(Submission a, Submission b) {
-        AllMatches match ;
+        AllMatches match;
         try {
             match = this.gSTiling.compare(a, b);
             return match.percent();
-        }catch(Exception e){
+        } catch (Exception e) {
             logger.error(e.getMessage());
         }
 
@@ -368,8 +368,13 @@ class JPlagJob implements Runnable {
 //                    a2.getSimilarities().add(sim_relation);
 
                     try {
-                        Similarity sim_relation = similarityRepository.createSimilarity(this.experimentStuTestNo,
-                                tExperimentStuTestNo, sdf.format(new Date()), sim);
+                        if (a1.getSubmitDate().after(a2.getSubmitDate())) {
+                            similarityRepository.createSimilarity(this.experimentStuTestNo,
+                                    tExperimentStuTestNo, sdf.format(new Date()), sim);
+                        } else {
+                            similarityRepository.createSimilarity(tExperimentStuTestNo,
+                                    this.experimentStuTestNo, sdf.format(new Date()), sim);
+                        }
 //                        a1 = this.assignmentRepository.save(a1);
 //                        a2 = this.assignmentRepository.save(a2);
                         logger.debug("create edge " + this.submission.name + " : " + entry.getValue().name + ", " + sim);

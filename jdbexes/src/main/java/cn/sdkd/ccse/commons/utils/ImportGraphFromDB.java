@@ -20,6 +20,7 @@ import org.neo4j.ogm.annotation.typeconversion.DateString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -70,9 +71,9 @@ public class ImportGraphFromDB {
 //        Assignment assignment = assignmentRepository.findBy2ExperimentStuTestNo(a1id, a2id);
 //        Assignment assignment1 = assignmentRepository.findByAssignmentid(a1id);
 //        Assignment assignment2 = assignmentRepository.findByAssignmentid(a2id);
-        List<Similarity> ls = similarityRepository.findSimilarityByValue(new Float(100));
-        List<Similarity> sims = this.similarityRepository.findSimilarityBy2ExperimentStuTestNo(a1id, a2id);
-        List<Similarity> ls1 = similarityRepository.findAllSimilarities();
+        List<Similarity> ls = similarityRepository.findBySimValue(100f);
+//        List<Similarity> sims = this.similarityRepository.findSimilarityBy2ExperimentStuTestNo(a1id, a2id);
+//        List<Similarity> ls1 = similarityRepository.findAllSimilarities();
 
         logger.info(ls.size() + "");
     }
@@ -84,7 +85,7 @@ public class ImportGraphFromDB {
     public void testCreateSimilarity() {
         SimpleDateFormat sdf = new SimpleDateFormat(DateString.ISO_8601);
 
-        List<Similarity> ls = similarityRepository.findSimilarityByValue(new Float(20));
+        List<Similarity> ls = similarityRepository.findBySimValue(new Float(20));
 
         Long a1id = 1373L;
         Long a2id = 1413L;
@@ -99,7 +100,7 @@ public class ImportGraphFromDB {
 //        a1 = this.assignmentRepository.findByAssignmentid(a1id);
 //        a2 = this.assignmentRepository.findByAssignmentid(a2id);
 
-        ls = similarityRepository.findSimilarityByValue(new Float(20));
+        ls = similarityRepository.findBySimValue(new Float(20));
 
 //        a1 = this.assignmentRepository.save(a1);
         Assignment assignment = assignmentRepository.findBy2ExperimentStuTestNo(a1id, a2id);

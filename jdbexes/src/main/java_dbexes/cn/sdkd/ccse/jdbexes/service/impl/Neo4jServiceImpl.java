@@ -28,8 +28,8 @@ public class Neo4jServiceImpl implements INeo4jService {
     private ISimilarityRepository similarityRepository;
 
     @Override
-    public Object getSimilarities(float sim) {
-        return similarityRepository.findSimilarityByValue(sim);
+    public Object getSimilarities(float simValue) {
+        return similarityRepository.findBySimValue(simValue);
     }
 
     @Override
