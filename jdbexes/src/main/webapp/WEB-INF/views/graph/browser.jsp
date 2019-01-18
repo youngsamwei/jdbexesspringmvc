@@ -36,12 +36,19 @@
         network.moveTo({scale: 0.8});
         //先初始化一个节点
         $.ajax({
-            url:'/graph/getStudents',
+            url:'/graph/getSimilarities',
             async:false,
+            data:{
+                simValue : 90
+            },
             success: function(ret) {
                 if(ret){
                     var result = $.parseJSON(ret);
-                    createNetwork(result);
+                    /*console.info(result);*/
+                    nodes.clear();
+                    edges.clear();
+                    createSimilarityNetwork(result);
+                    /*createNetwork(result);*/
                 }else{
                     layer.msg("查询失败");
                 }
@@ -141,6 +148,43 @@
         return false;
     }
 
+    function createSimilarityNetwork(sims){
+        for (var i = 0; i < sims.length; i++){
+            var sim = sims[i];
+            var a1 = sim.a1;
+            var a2 = sim.a2;
+            if (!node_exists(a1)){
+                nodes.add({
+                    id : a1.id,
+                    label : a1.submitDate,
+                    color:{
+                        background: '#FFD86E'
+                    }
+                });
+            }
+            if (!node_exists(a2)){
+                nodes.add({
+                    id : a2.id,
+                    label : a2.submitDate,
+                    color:{
+                        background: '#FFD86E'
+                    }
+                });
+            }
+            edges.add({
+                /*id: edge.edgeId,*/
+                arrows: 'to',
+                from: a1.id,
+                to: a2.id,
+                label: sim.simValue,
+                font: {align: "middle"},
+                length: 150
+            });
+        }
+    }
+    function node_exists(node){
+        return nodes.get(node.id);
+    }
     //扩展节点 param nodes和relation集合
     function createNetwork(param) {
         for (var i = 0; i < param.length; i++){
