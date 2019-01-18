@@ -97,7 +97,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     }
 
-    @PostConstruct
+//    @PostConstruct
     /*构造函数完成后开始:初始化已有作业*/
     private void initSubmissions() throws ExitException {
 

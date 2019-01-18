@@ -72,6 +72,9 @@ public class ImportGraphFromDB {
         for (Similarity s : ls) {
             logger.debug(sdf.format(s.getA1().getSubmitDate()) + " : " + sdf.format(s.getA2().getSubmitDate()) + " : "
                     + (s.getA1().getSubmitDate().after(s.getA2().getSubmitDate()) ? "after" : "not after"));
+//            this.similarityRepository.delete(s.getId());
+//            this.similarityRepository.createSimilarity(s.getA2().getAssignmentid(),
+//                    s.getA1().getAssignmentid(), sdf.format(s.getTestDate()), s.getSimValue());
         }
         logger.debug(ls.size() + "");
 
