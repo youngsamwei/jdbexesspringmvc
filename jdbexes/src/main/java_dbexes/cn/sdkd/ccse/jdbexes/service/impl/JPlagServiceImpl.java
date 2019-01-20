@@ -118,7 +118,7 @@ public class JPlagServiceImpl implements IJPlagService {
         User u = userService.selectById(est.getStuno());
             /*在读取每个测试的代码文件*/
         List<ExperimentStuTestFiles> lestf = experimentStuTestFilesService.selectListByTestno(est.getExperiment_stu_test_no().longValue());
-        String path = this.submitTempDir + "/test-" + UUID.randomUUID().toString() + "/";
+        String path = this.submitTempDir + "/test-" + u.getLoginName() + "_" + u.getName() + "_" + est.getExpno() + "_" + est.getExperiment_stu_test_no() + "/";//UUID.randomUUID().toString() + "/";
         File expf = new File(path);
         if (!expf.exists()) {
             expf.mkdirs();

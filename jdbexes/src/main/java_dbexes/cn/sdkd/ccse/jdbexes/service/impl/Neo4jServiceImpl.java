@@ -1,6 +1,8 @@
 package cn.sdkd.ccse.jdbexes.service.impl;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.relationships.Similarity;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IAssignmentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IExperimentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.ISimilarityRepository;
@@ -33,7 +35,22 @@ public class Neo4jServiceImpl implements INeo4jService {
     }
 
     @Override
-    public Object getStudents() {
+    public Object findSimilaritiesBySimValueExperimentid(float sim, Long expid) {
+        return similarityRepository.findBySimValueExperimentid(sim, expid);
+    }
+
+    @Override
+    public Object findSimilaritiesBySimValueStudentid(float sim, Long stuid) {
+        return similarityRepository.findBySimValueStudentid(sim, stuid);
+    }
+
+    @Override
+    public List<Similarity> findSimilaritiesBySimValueExperimentidStudentid(float sim, Long expid, Long stuid) {
+        return similarityRepository.findBySimValueExperimentidStudentid(sim, expid, stuid);
+    }
+
+    @Override
+    public List<Student>  getStudents() {
         return studentRepository.selectAll();
 //        List<Student> ls = new ArrayList<Student>();
 //        Iterator<Student> it = studentRepository.findAll().iterator();
@@ -55,7 +72,7 @@ public class Neo4jServiceImpl implements INeo4jService {
     }
 
     @Override
-    public Object getExperiments() {
+    public  List<Experiment> getExperiments() {
         List<Experiment> ls = new ArrayList<Experiment>();
         Iterator<Experiment> it = experimentRepository.findAll().iterator();
         while (it.hasNext()) {

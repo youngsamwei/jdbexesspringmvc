@@ -14,9 +14,30 @@
     }
 </style>
 
+<!--
 显示节点
 <input type="checkbox" name="checkbox" checked value="Person"/>Person
 <input type="checkbox" name="checkbox" checked value="Movie"/>Movie
+-->
+
+<a onclick="findSimilaritiesBySimValue();" href="javascript:void(0);" class="easyui-linkbutton" data-options="plain:true,iconCls:'fi-page-search icon-green'">查询</a>
+相似度大于等于
+<input name="simValue" id="simValue" type="text" placeholder="请输入相似度" class="easyui-numberbox span2" style="width: 50px; height: 20px;" data-options="required:true" value="100"></td>
+选择实验<select id="expid" name="expid" class="easyui-combobox" data-options="width:200,height:29,editable:false,panelHeight:'auto'">
+    <option>全部</option>
+    <c:forEach items="${experiments}" var="experiment" >
+        <option value="${experiment.experimentid}">${experiment.name}</option>
+    </c:forEach>
+</select>
+
+选择学生
+<select id="stuid" name="stuid" class="easyui-combobox" data-options="width:200,height:29,editable:false,panelHeight:200">
+    <option>全部</option>
+    <c:forEach items="${students}" var="student" >
+        <option value="${student.studentid}">${student.sno}_${student.name}</option>
+    </c:forEach>
+</select>
+
 <div id="network_id" class="network" class="easyui-layout" data-options="fit:true,border:false"></div><!-- 拓扑图容器-->
 <script>
     //拓扑
@@ -31,15 +52,22 @@
     var exps = [];
 
     $(function () {
+        progressLoad();
+
         init();
         //修改初始缩放
         network.moveTo({scale: 0.8});
         //先初始化一个节点
+
+        /* 需要增加 等待图标 */
+
         $.ajax({
-            url:'/graph/getSimilarities',
-            async:false,
+            url:'/graph/getSimilaritiesBySimValueExperimentidStudentid',
+            async:true,
             data:{
-                simValue : 90
+                simValue : 100,
+                expid:6,
+                stuid : 1
             },
             success: function(ret) {
                 if(ret){
@@ -52,8 +80,10 @@
                 }else{
                     layer.msg("查询失败");
                 }
+                progressClose();
             }
         });
+
         network.on("dragEnd", function(params){
             if (params.nodes&&params.nodes.length > 0){
                 network.clustering.updateClusteredNode(params.nodes[0], {physics : false});
@@ -70,6 +100,49 @@
             }
         });
     });
+
+    function findSimilaritiesBySimValue(){
+        progressLoad();
+        var simValue = $('#simValue').numberbox('getValue');
+        var expid = $('#expid').combobox('getValue');
+        var stuid = $('#stuid').combobox('getValue');
+        var url = 'getSimilarities';
+        var data = {simValue : simValue};
+        if (expid == '全部' ){
+            if (stuid == '全部'){
+                url = 'getSimilarities';
+            }else{
+                url = '/graph/getSimilaritiesBySimValueStudentid';
+                data.stuid = stuid;
+            }
+        }else{
+            if (stuid == '全部'){
+                url = '/graph/getSimilaritiesBySimValueExperimentid';
+                data.expid = expid;
+            }else{
+                url = '/graph/getSimilaritiesBySimValueExperimentidStudentid';
+                data.expid = expid;
+                data.stuid = stuid;
+            }
+        }
+        $.ajax({
+            url: url,
+            async:true,
+            data: data,
+            success: function(ret) {
+                if(ret){
+                    var result = $.parseJSON(ret);
+                    /*console.info(result);*/
+                    nodes.clear();
+                    edges.clear();
+                    createSimilarityNetwork(result);
+                }else{
+                    layer.msg("查询失败");
+                }
+                progressClose();
+            }
+        });
+    }
 
     function init(){
         // 创建节点对象
@@ -154,6 +227,7 @@
             if(!node_exists(student)){
                 nodes.add({
                     id : student.id,
+                    type : 'student',
                     label : student.name
                 });
             }
@@ -168,6 +242,7 @@
             });
         }
     }
+
     function createSimilarityNetwork(sims){
         for (var i = 0; i < sims.length; i++){
             var sim = sims[i];
@@ -176,6 +251,7 @@
             if (!node_exists(a1)){
                 nodes.add({
                     id : a1.id,
+                    type : 'assignment',
                     label : a1.submitDate,
                     color:{
                         background: '#FFD86E'
@@ -186,6 +262,7 @@
             if (!node_exists(a2)){
                 nodes.add({
                     id : a2.id,
+                    type : 'assignment',
                     label : a2.submitDate,
                     color:{
                         background: '#FFD86E'
@@ -205,10 +282,38 @@
                 length: length
             });
         }
+        get_key_node();
     }
+
+    /*查找只有入度没有出度的作业节点，并将其背景设为红色*/
+    function get_key_node(){
+        var key_node = new Map();
+        var non_key_node = new Map();
+        var ids = edges.getIds();
+        for(var i = 0; i < ids.length; i++){
+            var edge = edges.get(ids[i]);
+            var node = nodes.get(edge.from);
+            if (node.type == 'assignment'){
+                non_key_node.set(edge.from, edge.from);
+                key_node.set(edge.to, edge.to);
+            }
+        }
+        non_key_node.forEach(function (item, key, mapObj) {
+            key_node.delete(key);
+        });
+
+        key_node.forEach(function (item, key, mapObj){
+            var node = nodes.get(key);
+            node.color.background = '#FF0000';
+            nodes.update(node);
+        });
+
+    }
+
     function node_exists(node){
         return nodes.get(node.id);
     }
+
     //扩展节点 param nodes和relation集合
     function createNetwork(param) {
         for (var i = 0; i < param.length; i++){

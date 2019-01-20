@@ -23,7 +23,7 @@ public interface IStudentRepository extends GraphRepository<Student> {
     @Query("MATCH (t:Student {sno:{0}})-[r:SUBMIT]->(p:Assignment)<-[r1:BELONGTO]-(e:Experiment) RETURN t,r,p,r1,e")
     Student findBySnoDepth(String sno);
 
-    @Query("MATCH (t:Student)-[r:SUBMIT]->(p:Assignment)<-[r1:BELONGTO]-(e:Experiment) RETURN t,r,p,r1,e")
+    @Query("MATCH (t:Student)-[r:SUBMIT]->(p:Assignment)<-[r1:BELONGTO]-(e:Experiment) RETURN t,r,p,r1,e order by t.studentid ")
     List<Student> selectAll();
 
 }

@@ -20,7 +20,6 @@ import org.neo4j.ogm.annotation.typeconversion.DateString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -65,6 +64,32 @@ public class ImportGraphFromDB {
     }
 
     @Test
+    public void testFindBySimValueExperimentidStudentid(){
+        List<Similarity> ls = this.similarityRepository.findBySimValueExperimentidStudentid(100f, 6L, 127L);
+        logger.debug(ls.size() + "");
+    }
+
+    @Test
+    public void testFindBySimValueExperimentid(){
+        Experiment e1 = this.experimentRepository.findByExperimentid(6L);
+        List<Similarity> ls1 = this.similarityRepository.findBySimValueExperimentid(100f, e1.getId());
+
+        Experiment e2 = this.experimentRepository.findByExperimentid(7L);
+        List<Similarity> ls2 = this.similarityRepository.findBySimValueExperimentid(100f, e2.getId());
+
+        List<Similarity> ls3 = this.similarityRepository.findBySimValue(100f);
+
+        logger.debug(ls1.size() + " : " + ls2.size());
+    }
+
+    @Test
+    public void testFindStudentByName(){
+        Student s1 = this.studentRepository.findByName("谭婷");
+        Student s2 = this.studentRepository.findByName("毛锟");
+        logger.debug(s1.getName());
+    }
+
+    @Test
     public void testFindSimilaritiesByQuery() {
         SimpleDateFormat sdf = new SimpleDateFormat(DateString.ISO_8601);
 
@@ -72,9 +97,9 @@ public class ImportGraphFromDB {
         for (Similarity s : ls) {
             logger.debug(sdf.format(s.getA1().getSubmitDate()) + " : " + sdf.format(s.getA2().getSubmitDate()) + " : "
                     + (s.getA1().getSubmitDate().after(s.getA2().getSubmitDate()) ? "after" : "not after"));
-//            this.similarityRepository.delete(s.getId());
-//            this.similarityRepository.createSimilarity(s.getA2().getAssignmentid(),
-//                    s.getA1().getAssignmentid(), sdf.format(s.getTestDate()), s.getSimValue());
+            this.similarityRepository.delete(s.getId());
+            this.similarityRepository.createSimilarity(s.getA2().getAssignmentid(),
+                    s.getA1().getAssignmentid(), sdf.format(s.getTestDate()), s.getSimValue());
         }
         logger.debug(ls.size() + "");
 
@@ -189,8 +214,11 @@ public class ImportGraphFromDB {
         }
     }
 
-    /*第二步：增加所有学生以及测试*/
+    /*
+     当联系和节点多时，效率较低,因为使用直接使用save保存
+    第二步：增加所有学生以及测试*/
     @Test
+    @Deprecated
     public void importAssignments() {
         EntityWrapper<ExperimentStuTest> wrapper = new EntityWrapper<ExperimentStuTest>();
         List<ExperimentStuTest> lses = experimentStuTestMapper.selectList(wrapper);
@@ -240,6 +268,51 @@ public class ImportGraphFromDB {
             e = experimentRepository.save(e);
             s = studentRepository.save(s);
             a = assignmentRepository.save(a);
+
+            logger.debug(s.getSno() + ", " + s.getName() + ", " + e.getName() + ", " + est.getTesttime());
+        }
+
+    }
+
+    /*
+    这个实现效率应该更高一些
+    第二步：增加所有学生以及测试*/
+    @Test
+    public void importAssignmentsByQuery() {
+        EntityWrapper<ExperimentStuTest> wrapper = new EntityWrapper<ExperimentStuTest>();
+        List<ExperimentStuTest> lses = experimentStuTestMapper.selectList(wrapper);
+        for (ExperimentStuTest est : lses) {
+
+            Student s = studentRepository.findByStudentid(est.getStuno().longValue());
+            /*如果学生不在图数据库中则创建*/
+            if (s == null) {
+                User u = userService.selectById(est.getStuno().longValue());
+                s = new Student(est.getStuno().longValue(), u.getLoginName(), u.getName());
+                s = studentRepository.save(s);
+            }
+
+            cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment e = experimentRepository.findByExperimentid(est.getExpno().longValue());
+            /*如果实验不在图数据库中则创建*/
+            if (e == null) {
+                cn.sdkd.ccse.jdbexes.model.Experiment exp = experimentService.selectById(est.getExpno().longValue());
+                e = new cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment(est.getExpno().longValue(), exp.getExpname(), "");
+                e = experimentRepository.save(e);
+            }
+
+            Assignment a = assignmentRepository.findByAssignmentid(est.getExperiment_stu_test_no().longValue());
+            if (a == null) {
+                a = new Assignment(est.getExperiment_stu_test_no().longValue(), est.getTesttime());
+                a = assignmentRepository.save(a);
+            }
+
+            Assignment a1 = this.assignmentRepository.findBySubmit(s.getId(), a.getId());
+            if (a1 == null) {
+                a1 = this.assignmentRepository.createSubmitRelationship(s.getId(), a.getId());
+            }
+            Assignment a2 = this.assignmentRepository.findByBelongto(e.getId(), a.getId());
+            if (a2 == null) {
+                a2 = this.assignmentRepository.createBelongtoRelationship(e.getId(), a.getId());
+            }
 
             logger.debug(s.getSno() + ", " + s.getName() + ", " + e.getName() + ", " + est.getTesttime());
         }
