@@ -14,4 +14,5 @@ public interface IExperimentStuTestFilesService extends IService<ExperimentStuTe
     /*根据测试编号查询测试代码文件*/
     List<ExperimentStuTestFiles> selectListByTestno(@Param("experiment_stu_test_no") Long experiment_stu_test_no);
 
+    boolean insertLatestTestFiles(@Param("experiment_stu_test_no") Long experiment_stu_test_no, @Param("stuno") Long stuno, @Param("expno")Long expno);
 }

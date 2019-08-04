@@ -24,10 +24,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -61,6 +58,25 @@ public class ImportGraphFromDB {
         List<Similarity> ls = this.similarityRepository.deleteSimilaritiesByStudentName("谭婷", "班鑫");
 
         logger.debug(ls.size() + "");
+    }
+
+    /*查询与指定测试相似的测试*/
+    @Test
+    public void testFindByStunoExpno(){
+//        Student s = this.studentRepository.findByName("刘子笛");
+        List<Assignment > las = this.assignmentRepository.findByStudentName("刘子笛");
+
+        for(Assignment a : las) {
+            logger.debug(a.getId() + "-----------------------------------------" + a.getAssignmentid());
+            List<Similarity> ls = this.similarityRepository.findBySimValueAssignmentid(90f, a.getId());
+            logger.debug("List<Similarity> : " + ls.size() + "");
+
+            List<Student> lss = this.studentRepository.findBySimValueAssignmentid(90f, a.getId());
+            logger.debug("List<Student> : " + lss.size() + "");
+
+            List<Assignment> la = this.assignmentRepository.findBySimValueAssignmentid(90f, a.getId());
+            logger.debug("List<Assignment> : " + la.size() + "");
+        }
     }
 
     @Test

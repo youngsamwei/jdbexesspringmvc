@@ -121,15 +121,17 @@ public class ImportFromLanMo {
             return;
         }
 
-        ResultSet rs3 = mysqlUtil.select("select expfilestuno as experiment_files_stu_no, fileno, expstuno from experiment_files_stu " +
-                " where expstuno =" + expstuno
+        ResultSet rs3 = mysqlUtil.select("select expfilestuno as experiment_files_stu_no, fileno, expstuno "
+                + " from experiment_files_stu "
+                + " where expstuno =" + expstuno
                 + " and submittime = '" + tsd.submittime + "' ");
         while (rs3.next()) {
-            ResultSet rs2 = mysqlUtil.select("select experiment_stu_test_files_no from experiment_stu_test_files " +
-                    " where experiment_stu_test_no = " + experiment_stu_test_no
+            ResultSet rs2 = mysqlUtil.select("select experiment_stu_test_files_no from experiment_stu_test_files "
+                    + " where experiment_stu_test_no = " + experiment_stu_test_no
                     + " and experiment_files_stu_no=" + rs3.getLong("experiment_files_stu_no")
                     + " and fileno=" + rs3.getLong("fileno")
                     + " and stuno=" + stuno);
+            /*若不存在则*/
             if (!rs2.next()) {
                 mysqlUtil.executeupdate("insert into experiment_stu_test_files(experiment_stu_test_no, experiment_files_stu_no, fileno, stuno) " +
                         " values(" + experiment_stu_test_no + ", "

@@ -2,12 +2,17 @@ package cn.sdkd.ccse.jdbexes.service.impl;
 
 import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
+import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStuTestFiles;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.relationships.Similarity;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IAssignmentRepository;
+import cn.sdkd.ccse.jdbexes.neo4j.repositories.IExperimentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.ISimilarityRepository;
+import cn.sdkd.ccse.jdbexes.neo4j.repositories.IStudentRepository;
 import cn.sdkd.ccse.jdbexes.service.*;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.wangzhixuan.model.User;
@@ -44,6 +49,8 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Autowired
     private IUserService userService;
+    @Autowired
+    private IExperimentStuService experimentStuService;
 
     @Autowired
     private IExperimentStuTestService experimentStuTestService;
@@ -56,6 +63,10 @@ public class JPlagServiceImpl implements IJPlagService {
     private IAssignmentRepository assignmentRepository;
     @Autowired
     private ISimilarityRepository similarityRepository;
+    @Autowired
+    private IStudentRepository studentRepository;
+    @Autowired
+    private IExperimentRepository experimentRepository;
 
     private String submitFilesRootDir;
     private String submitTempDir;
@@ -97,7 +108,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     }
 
-//    @PostConstruct
+    @PostConstruct
     /*构造函数完成后开始:初始化已有作业*/
     private void initSubmissions() throws ExitException {
 
@@ -123,6 +134,7 @@ public class JPlagServiceImpl implements IJPlagService {
         if (!expf.exists()) {
             expf.mkdirs();
         }
+        /*先产生文件*/
         for (ExperimentStuTestFiles estf : lestf) {
             ExperimentFilesStu efs = experimentFilesStuService.selectById(estf.getExperiment_files_stu_no());
             OutputStreamWriter op = null;
@@ -149,6 +161,7 @@ public class JPlagServiceImpl implements IJPlagService {
             }
         }
 
+        /*再解析，然后提交相似度比较任务*/
         if (expf.exists()) {
             ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(est.getExpno() + "");
             if (expSubmissions == null) {
@@ -164,7 +177,10 @@ public class JPlagServiceImpl implements IJPlagService {
                 if (submission.struct != null) {
                     expSubmissions.put(key, submission);
 
-                    JPlagJob jPlagJob = new JPlagJob(this, est.getExpno().longValue(), submission, assignmentRepository, this.similarityRepository);
+                    JPlagJob jPlagJob = new JPlagJob(this, this.experimentStuService,
+                            est.getExpno().longValue(), est.getStuno().longValue(),
+                            submission, assignmentRepository, this.similarityRepository,
+                            this.studentRepository, this.experimentRepository);
                     threadPoolExecutor.execute(jPlagJob);
                 }
             } catch (ExitException e) {
@@ -257,8 +273,7 @@ public class JPlagServiceImpl implements IJPlagService {
     public ConcurrentHashMap<String, Submission> getSubmission(String expno) {
         return submissions.get(expno);
     }
-
-    ;
+   ;
 
     @Override
     public void compare(String expno, Submission submission) {
@@ -298,24 +313,51 @@ public class JPlagServiceImpl implements IJPlagService {
                 + "，队列中等待执行的任务数目：" + threadPoolExecutor.getQueue().size()
                 + "，已执行完成的任务数目：" + threadPoolExecutor.getCompletedTaskCount());
     }
+
+    @Override
+    public void submitJob(Long stuno, Long expno) {
+        UserVo u = userService.selectVoById(stuno);
+        String sno = u.getLoginName();
+        String sname = u.getName();
+        List<ExperimentFilesStuVO> experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(stuno, expno);
+
+        /*创建一次测试*/
+        ExperimentStuTest est = new ExperimentStuTest();
+        est.setStuno(stuno.intValue());
+        est.setExpno(expno.intValue());
+        /*增加记录后能返回自动增长的字段值TableId*/
+        experimentStuTestService.insert(est);
+
+        /*根据最新的提交文件产生最近一次测试记录*/
+        experimentStuTestFilesService.insertLatestTestFiles(est.getExperiment_stu_test_no().longValue(), stuno, expno);
+
+        /*根据est产生文件，解析并提交相似度比较任务*/
+        initOneTest(est);
+    }
 }
 
 class JPlagJob implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(JPlagJob.class);
     private Long expno;
+    private Long stuno;
     private String sno;
     private String sname;
     private Long experimentStuTestNo;
     private IJPlagService jPlagService;
+    private IExperimentStuService experimentStuService;
     private IAssignmentRepository assignmentRepository;
     private ISimilarityRepository similarityRepository;
     private SimpleDateFormat sdf = new SimpleDateFormat(DateString.ISO_8601);
+    private IStudentRepository studentRepository;
+    private IExperimentRepository experimentRepository;
 
     private Submission submission;
 
-    public JPlagJob(IJPlagService jPlagService, Long expno, Submission submission, IAssignmentRepository assignmentRepository, ISimilarityRepository similarityRepository) {
+    public JPlagJob(IJPlagService jPlagService, IExperimentStuService experimentStuService, Long expno, Long stuno, Submission submission, IAssignmentRepository assignmentRepository,
+                    ISimilarityRepository similarityRepository, IStudentRepository studentRepository, IExperimentRepository experimentRepository) {
         this.jPlagService = jPlagService;
         this.expno = expno;
+        this.stuno = stuno;
         this.submission = submission;
         String[] keys = submission.name.split("_");
         sno = keys[0];
@@ -323,6 +365,9 @@ class JPlagJob implements Runnable {
         experimentStuTestNo = Long.parseLong(keys[2]);
         this.assignmentRepository = assignmentRepository;
         this.similarityRepository = similarityRepository;
+        this.studentRepository = studentRepository;
+        this.experimentStuService = experimentStuService;
+        this.experimentRepository = experimentRepository;
     }
 
     @Override
@@ -332,13 +377,24 @@ class JPlagJob implements Runnable {
 
         Assignment a1 = this.assignmentRepository.findByAssignmentid(this.experimentStuTestNo);
         if (a1 == null) {
-            return;
+            a1 = new Assignment();
+            a1.setAssignmentid(this.experimentStuTestNo);
+            a1.setSubmitDate(new Date());
+            a1 = this.assignmentRepository.save(a1);
+            Student s = studentRepository.findByStudentid(this.stuno);
+            Experiment e = experimentRepository.findByExperimentid(this.expno);
+            this.assignmentRepository.createSubmitRelationship(s.getId(), a1.getId());
+            this.assignmentRepository.createBelongtoRelationship(e.getId(), a1.getId());
         }
         for (Map.Entry<String, Submission> entry : submissions.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(this.submission.name)) {
                 continue;
             }
             String[] keys = entry.getKey().split("_");
+            if (keys.length < 3){
+                logger.error("错误的Submission " + entry.getKey());
+                continue;
+            }
             String tsno = keys[0];
             String tsname = keys[1];
             Long tExperimentStuTestNo = Long.parseLong(keys[2]);
@@ -375,5 +431,9 @@ class JPlagJob implements Runnable {
 
         }
 
+        float sim = 90f;
+        /*TODO:获取相似度比较结果，写入数据库*/
+        List<Student> lss = this.studentRepository.findBySimValueAssignmentid(sim, a1.getId());
+        experimentStuService.updateSimStatus(this.stuno, this.expno, 3, "与" + lss.size() + "个同学的作业相似度超过" + sim + "%.");
     }
 }

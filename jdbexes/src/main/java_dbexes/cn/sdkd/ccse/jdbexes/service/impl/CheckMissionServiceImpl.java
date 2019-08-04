@@ -100,17 +100,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
             /*先生成文件*/
             this.generateFiles(srcDir, experimentFilesStuVOList);
 
-            /*再检查相似度*/
-            boolean passed = false;
-            try {
-                jPlagService.updateSubmission(expno + "", sno, sname);
-                passed = jPlagService.compareSubmission(expno + "", sno, sname);
-                experimentStuService.updateSimStatus(stuno, expno, passed ? 1 : -1, passed ? "相似度较低":"相似度较低");
-
-            } catch (ExitException e) {
-                logger.error(e.getMessage());
-            }
-            /*相似度通过再测试*/
+            /*再测试*/
             experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
             CheckJob cj = new CheckJob(stuno, expno, sno, sname, experimentFilesStuService,
                     experimentStuService,

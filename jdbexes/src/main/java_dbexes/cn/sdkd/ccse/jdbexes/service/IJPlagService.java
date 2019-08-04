@@ -28,5 +28,8 @@ public interface IJPlagService {
     /*获得实验编号expno对应的submission列表*/
     ConcurrentHashMap<String, Submission> getSubmission(String expno);
 
-    public void monitorJob();
+    void monitorJob();
+
+    void submitJob(Long stuno, Long expno);
+
 }

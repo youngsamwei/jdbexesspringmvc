@@ -40,7 +40,7 @@ public interface ISimilarityRepository extends GraphRepository<Similarity> {
             " where r.simValue >= {simValue}  return r, a1, a2, r2, r3,s1, s2, exp order by r.simValue desc")
     List<Similarity> findBySimValueExperimentid(@Param("simValue") Float simValue, @Param("expid")Long expid);
 
-    /*查询指定实验的测试相似度大于等于simValue的联系*/
+    /*查询指定实验的测试相似度大于等于simValue的联系，同一个学生提交的不同的测试也比较相似度*/
     @Query("MATCH (exp:Experiment {experimentid:{expid}}), (a1:Assignment)-[r:SIMILARITY]->(a2:Assignment), " +
             " (s1:Student)-[r2:SUBMIT]-(a1), (s2:Student)-[r3:SUBMIT]-(a2)," +
             " (exp)-[r4:BELONGTO]->(a1),  (exp)-[r5:BELONGTO]->(a2) " +
@@ -76,4 +76,12 @@ public interface ISimilarityRepository extends GraphRepository<Similarity> {
             " (s1:Student)-[r2:SUBMIT]-(a1), (s2:Student)-[r3:SUBMIT]-(a2)" +
             " where a1.submitDate < a2.submitDate  return r, a1, a2, r2, r3,s1, s2 ")
     List<Similarity> checkSimilarities();
+
+    /* 查询指定测试的相似度大于指定值simValue的联系 */
+    @Query("START a1 = node({assignmentid}) MATCH (a1)-[r:SIMILARITY]->(a2:Assignment), " +
+            "(a1)-[r2:SUBMIT]-(s1:Student), (a2)-[r3:SUBMIT]-(s2:Student) " +
+            " WHERE  s2.studentid <> s1.studentid and r.simValue >= {simValue}" +
+            " RETURN r,a1,a2,s1,s2,r2,r3 ")
+    List<Similarity> findBySimValueAssignmentid(@Param("simValue") float simValue, @Param("assignmentid")Long assignmentid);
+
 }

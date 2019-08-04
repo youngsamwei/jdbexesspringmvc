@@ -45,6 +45,7 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
             es.setExpno(Long.parseLong(expno));
             es.setStuno(userid);
             es.setStatus(1);
+            es.setTeststatus(-1);
             list.add(es);
         }
         insertBatch(list);

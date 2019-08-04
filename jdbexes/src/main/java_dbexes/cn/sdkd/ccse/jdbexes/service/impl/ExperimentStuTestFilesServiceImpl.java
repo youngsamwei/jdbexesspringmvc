@@ -21,4 +21,9 @@ public class ExperimentStuTestFilesServiceImpl extends ServiceImpl<ExperimentStu
     public List<ExperimentStuTestFiles> selectListByTestno(Long experiment_stu_test_no) {
         return experimentStuTestFilesMapper.selectListByTestno(experiment_stu_test_no);
     }
+
+    @Override
+    public boolean insertLatestTestFiles(Long experiment_stu_test_no, Long stuno, Long expno) {
+        return experimentStuTestFilesMapper.insertLatestTestFiles(experiment_stu_test_no, stuno, expno);
+    }
 }

@@ -8,6 +8,7 @@ import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
+import jplag.ExitException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -247,6 +248,10 @@ public class ExperimentStuController extends BaseController {
 
         logger.info("开始测试代码.");
         checkMissionService.submitJob(getUserId(), expno);
+
+        experimentStuService.updateSimStatus(getUserId(), expno, -1, "正在计算相似度");
+        jPlagService.submitJob(getUserId(), expno);
+
 
         return renderSuccess("开始测试");
     }
