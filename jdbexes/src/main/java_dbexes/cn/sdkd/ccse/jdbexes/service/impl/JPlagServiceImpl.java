@@ -51,6 +51,8 @@ public class JPlagServiceImpl implements IJPlagService {
     private IUserService userService;
     @Autowired
     private IExperimentStuService experimentStuService;
+    @Autowired
+    private IExperimentService experimentService;
 
     @Autowired
     private IExperimentStuTestService experimentStuTestService;
@@ -67,6 +69,7 @@ public class JPlagServiceImpl implements IJPlagService {
     private IStudentRepository studentRepository;
     @Autowired
     private IExperimentRepository experimentRepository;
+
 
     private String submitFilesRootDir;
     private String submitTempDir;
@@ -168,6 +171,9 @@ public class JPlagServiceImpl implements IJPlagService {
                 expSubmissions = new ConcurrentHashMap<String, Submission>();
                 submissions.put(est.getExpno() + "", expSubmissions);
             }
+
+            checkExistStudentExperiment(est.getStuno().longValue(), est.getExpno().longValue());
+
             /*key：学生学号，姓名和测试编号*/
             String key = u.getLoginName() + "_" + u.getName() + "_" + est.getExperiment_stu_test_no();
             Submission submission = new Submission(key, expf, false, this.program, this.program.get_language());
@@ -180,7 +186,8 @@ public class JPlagServiceImpl implements IJPlagService {
                     JPlagJob jPlagJob = new JPlagJob(this, this.experimentStuService,
                             est.getExpno().longValue(), est.getStuno().longValue(),
                             submission, assignmentRepository, this.similarityRepository,
-                            this.studentRepository, this.experimentRepository);
+                            this.studentRepository, this.experimentRepository,
+                            this.experimentService, this.userService);
                     threadPoolExecutor.execute(jPlagJob);
                 }
             } catch (ExitException e) {
@@ -314,12 +321,36 @@ public class JPlagServiceImpl implements IJPlagService {
                 + "，已执行完成的任务数目：" + threadPoolExecutor.getCompletedTaskCount());
     }
 
+    /*检查student和experimetn是否存在，若不存在，则在neo4j中创建*/
+    private void checkExistStudentExperiment(Long stuno, Long expno){
+        Student s = studentRepository.findByStudentid(stuno);
+        Experiment e = experimentRepository.findByExperimentid(expno);
+        if (s == null){
+            logger.error("checkExistStudentExperiment 错误：" + stuno);
+        }
+            /*如果不存在此学生，则增加*/
+            if (s == null) {
+                User u = userService.selectById(stuno);
+                s = new Student(stuno, u.getLoginName(), u.getName());
+                s = studentRepository.save(s);
+                logger.info("checkExistStudentExperiment 增加学生：" + stuno);
+            }
+            /*如果不存在此实验，则增加*/
+            if (e == null) {
+                cn.sdkd.ccse.jdbexes.model.Experiment exp = experimentService.selectById(expno);
+                e = new cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment(expno, exp.getExpname(), "");
+                e = experimentRepository.save(e);
+                logger.info("checkExistStudentExperiment 增加学生：" + stuno);
+            }
+    }
+
     @Override
     public void submitJob(Long stuno, Long expno) {
         UserVo u = userService.selectVoById(stuno);
         String sno = u.getLoginName();
         String sname = u.getName();
         List<ExperimentFilesStuVO> experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(stuno, expno);
+
 
         /*创建一次测试*/
         ExperimentStuTest est = new ExperimentStuTest();
@@ -350,11 +381,16 @@ class JPlagJob implements Runnable {
     private SimpleDateFormat sdf = new SimpleDateFormat(DateString.ISO_8601);
     private IStudentRepository studentRepository;
     private IExperimentRepository experimentRepository;
+    private IExperimentService experimentService;
+    private IUserService userService;
+
 
     private Submission submission;
 
-    public JPlagJob(IJPlagService jPlagService, IExperimentStuService experimentStuService, Long expno, Long stuno, Submission submission, IAssignmentRepository assignmentRepository,
-                    ISimilarityRepository similarityRepository, IStudentRepository studentRepository, IExperimentRepository experimentRepository) {
+    public JPlagJob(IJPlagService jPlagService, IExperimentStuService experimentStuService, Long expno, Long stuno,
+                    Submission submission, IAssignmentRepository assignmentRepository,
+                    ISimilarityRepository similarityRepository, IStudentRepository studentRepository,
+                    IExperimentRepository experimentRepository, IExperimentService experimentService, IUserService userService) {
         this.jPlagService = jPlagService;
         this.expno = expno;
         this.stuno = stuno;
@@ -368,6 +404,8 @@ class JPlagJob implements Runnable {
         this.studentRepository = studentRepository;
         this.experimentStuService = experimentStuService;
         this.experimentRepository = experimentRepository;
+        this.experimentService = experimentService;
+        this.userService = userService;
     }
 
     @Override
@@ -383,6 +421,23 @@ class JPlagJob implements Runnable {
             a1 = this.assignmentRepository.save(a1);
             Student s = studentRepository.findByStudentid(this.stuno);
             Experiment e = experimentRepository.findByExperimentid(this.expno);
+            if (s == null){
+                logger.error("错误：" + this.stuno);
+            }
+            /*在此添加学生失败，会出现重复*/
+            /*如果不存在此学生，则增加*/
+//            if (s == null) {
+//                User u = userService.selectById(this.stuno);
+//                s = new Student(this.stuno, u.getLoginName(), u.getName());
+//                s = studentRepository.save(s);
+//            }
+            /*如果不存在此实验，则增加*/
+//            if (e == null) {
+//                cn.sdkd.ccse.jdbexes.model.Experiment exp = experimentService.selectById(this.expno);
+//                e = new cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment(this.expno, exp.getExpname(), "");
+//                e = experimentRepository.save(e);
+//            }
+
             this.assignmentRepository.createSubmitRelationship(s.getId(), a1.getId());
             this.assignmentRepository.createBelongtoRelationship(e.getId(), a1.getId());
         }
@@ -408,10 +463,7 @@ class JPlagJob implements Runnable {
 
                 Assignment a2 = this.assignmentRepository.findByAssignmentid(tExperimentStuTestNo);
                 if (a2 != null) {
-//                    if ((sname.equalsIgnoreCase("谭婷")||tsname.equalsIgnoreCase("谭婷"))
-//                            &&(sname.equalsIgnoreCase("班鑫")||tsname.equalsIgnoreCase("班鑫"))){
-//                        logger.debug(" pause ");
-//                    }
+
                     try {
                         if (a1.getSubmitDate().after(a2.getSubmitDate())) {
                             similarityRepository.createSimilarity(this.experimentStuTestNo,

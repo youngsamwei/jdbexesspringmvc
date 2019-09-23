@@ -116,6 +116,11 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     }
 
     private void generateFiles(String srcDir, List<ExperimentFilesStuVO> experimentFilesStuVOList) {
+        /*如果srcDir所指文件夹不存在，则创建*/
+        File f = new File(srcDir);
+        if(!f.exists()){
+            f.mkdirs();
+        }
         logger.debug("获得" + experimentFilesStuVOList.size() + "文件");
         Timestamp maxtt = null;
         for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {

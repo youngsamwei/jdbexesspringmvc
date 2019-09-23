@@ -60,6 +60,12 @@ public class ImportGraphFromDB {
         logger.debug(ls.size() + "");
     }
 
+    @Test
+    public void testFindStudentBySid(){
+        Student s = this.studentRepository.findByStudentid(402L);
+
+        logger.debug(s.getName());
+    }
     /*查询与指定测试相似的测试*/
     @Test
     public void testFindByStunoExpno(){
@@ -100,8 +106,11 @@ public class ImportGraphFromDB {
 
     @Test
     public void testFindStudentByName(){
-        Student s1 = this.studentRepository.findByName("谭婷");
-        Student s2 = this.studentRepository.findByName("毛锟");
+        Student s1 = this.studentRepository.findByName("石乐山");
+        Student s2 = this.studentRepository.findByName("吴同洲");
+
+        List<Student> listStudent = this.studentRepository.selectAll();
+
         logger.debug(s1.getName());
     }
 
@@ -292,7 +301,7 @@ public class ImportGraphFromDB {
 
     /*
     这个实现效率应该更高一些
-    第二步：增加所有学生以及测试*/
+    第二步：增加所有测试及相关学生*/
     @Test
     public void importAssignmentsByQuery() {
         EntityWrapper<ExperimentStuTest> wrapper = new EntityWrapper<ExperimentStuTest>();
