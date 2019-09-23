@@ -213,7 +213,7 @@
             <artifactId>jplag</artifactId>
             <version>2.11.9-SNAPSHOT</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/jplag-2.11.9-SNAPSHOT.jar</systemPath>
+            <systemPath>${basedir}/lib/jplag-2.11.9-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>jplag</groupId>
@@ -314,6 +314,8 @@
                     </webApp>
                 </configuration>
             </plugin>
+
+
             <!-- tomcat7:run -->
             <plugin>
                 <groupId>org.apache.tomcat.maven</groupId>

@@ -233,7 +233,7 @@
     </div>
     <div name="dropbox" id="dropbox" data-options="region:'south',border:false"  style="background-color:#888888; color:white; font-size:20px; height:120px;line-height:50px;border:3px dashed silver;text-align: center;display:block;">
        拖拽文件到此处准备上传<BR>
-       请拖拽c文件，且与上面列表中的文件名称一致
+       请拖拽cpp文件，且与上面列表中的文件名称一致
 
     </div>
 </div>
