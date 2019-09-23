@@ -486,6 +486,11 @@ class JPlagJob implements Runnable {
         float sim = 90f;
         /*TODO:获取相似度比较结果，写入数据库*/
         List<Student> lss = this.studentRepository.findBySimValueAssignmentid(sim, a1.getId());
-        experimentStuService.updateSimStatus(this.stuno, this.expno, 3, "与" + lss.size() + "个同学的作业相似度超过" + sim + "%.");
+        /*若相似度超过阈值的学生个数大于0，则状态是3，否则状态是0*/
+        if (lss.size() >0) {
+            experimentStuService.updateSimStatus(this.stuno, this.expno, 3, "与" + lss.size() + "个同学的作业相似度超过" + sim + "%.");
+        }else{
+            experimentStuService.updateSimStatus(this.stuno, this.expno, 0, "与" + lss.size() + "个同学的作业相似度超过" + sim + "%.");
+        }
     }
 }

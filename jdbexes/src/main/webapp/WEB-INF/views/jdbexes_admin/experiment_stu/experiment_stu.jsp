@@ -70,7 +70,14 @@
                   width : '200',
                   title : '相似度描述',
                   field : 'simdesc',
-                  sortable : true
+                  sortable : true,
+                  formatter : function(value, row, index){
+                          if (row.simstatus == 0){
+                              return "正常";
+                          }else{
+                              return value;
+                          }
+                  }
               }, {
                 field : 'teststatus',
                 title : '操作',
