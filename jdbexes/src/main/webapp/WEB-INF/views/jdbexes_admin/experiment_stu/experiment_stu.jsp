@@ -53,7 +53,7 @@
                    field : 'name',
                    sortable : true
                } ,  {
-                 width : '200',
+                 width : '100',
                  title : '测试描述',
                  field : 'testdesc',
                  sortable : true,
@@ -66,7 +66,12 @@
                         return value;
                     }
                  }
-             } , {
+             } ,  {
+                  width : '200',
+                  title : '相似度描述',
+                  field : 'simdesc',
+                  sortable : true
+              }, {
                 field : 'teststatus',
                 title : '操作',
                 width : 200,
