@@ -142,11 +142,15 @@ public class JPlagServiceImpl implements IJPlagService {
             ExperimentFilesStu efs = experimentFilesStuService.selectById(estf.getExperiment_files_stu_no());
             OutputStreamWriter op = null;
             try {
-                String fileName = path + efs.getFileno() + ".c";
-                op = new OutputStreamWriter(new FileOutputStream(fileName), "utf-8");
-                op.append(efs.getFile_content());
-                op.flush();
-                op.close();
+                if (efs != null){
+                    String fileName = path + efs.getFileno() + ".cpp";
+                    op = new OutputStreamWriter(new FileOutputStream(fileName), "utf-8");
+                    op.append(efs.getFile_content());
+                    op.flush();
+                    op.close();
+                }else{
+                    logger.error("efs is null : " + estf.getExperiment_files_stu_no());
+                }
             } catch (UnsupportedEncodingException e) {
                 logger.error(e.getMessage());
             } catch (FileNotFoundException e) {
