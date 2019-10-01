@@ -5,6 +5,7 @@ import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import com.baomidou.mybatisplus.service.IService;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.commons.result.Tree;
+import com.wangzhixuan.model.Organization;
 
 import java.util.List;
 
@@ -20,6 +21,9 @@ public interface IExperimentStuService extends IService<ExperimentStu> {
     void experimentFilesDataGridByUser(PageInfo pageInfo, Long userid, Long expstuno);
 
     ExperimentStu selectById(Long expstuno);
+
+    /*查询学生所属的班级*/
+    List<Organization> selectOrganizations();
 
     List<ExperimentStu> selectAll();
 

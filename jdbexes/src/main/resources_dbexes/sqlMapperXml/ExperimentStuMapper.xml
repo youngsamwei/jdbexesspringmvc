@@ -27,11 +27,15 @@
     </select>
 
     <select id="experimentStuByExpno" resultType="Map" useCache="false">
-        select expstuno, u.login_name, u.name, es.status, selectedtime, teststatus, testdesc, simstatus, simdesc
+        select es.expstuno, u.login_name, u.name, es.status, selectedtime, teststatus, testdesc, simstatus, simdesc, efsl.submittime
         from experiment_stu es join user u on es.stuno = u.id
+            join (select expstuno, max(submittime) submittime from experiment_files_stu_latest group by expstuno) efsl on es.expstuno = efsl.expstuno
         <where>
             <if test=" expno != null and expno != '' ">
                 expno = #{expno}
+            </if>
+            <if test=" organization_id != null and organization_id != '' and organization_id != -1">
+                and organization_id = #{organization_id}
             </if>
 
         </where>

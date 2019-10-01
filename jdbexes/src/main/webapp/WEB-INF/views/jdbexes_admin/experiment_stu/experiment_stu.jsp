@@ -3,6 +3,8 @@
 <script type="text/javascript">
     var experiment_stu_experiment_stuDataGrid;
     var experiment_stu_experimentTree;
+    var current_experiment_no = -1;
+    var current_organization_id = -1;
 
     $(function() {
         experiment_stu_experimentTree = $('#experiment_stu_experimentTree').tree({
@@ -10,10 +12,12 @@
             parentField : 'pid',
             lines : true,
             onSelect : function(node) {
+                current_experiment_no = node.id;
                 experiment_stu_experiment_stuDataGrid.datagrid({
                     url : '${path }/dbexperiment_stu/experimentStuByExpno',
                     queryParams:{
-                            expno: node.id
+                            expno: node.id,
+                            organization_id : current_organization_id
                         }
                 });
 
@@ -53,6 +57,11 @@
                    field : 'name',
                    sortable : true
                } ,  {
+                  width:'100',
+                  title : '提交时间',
+                  field : 'submittime',
+                  sortable : true
+               },{
                  width : '100',
                  title : '测试描述',
                  field : 'testdesc',
@@ -97,6 +106,19 @@
             toolbar : '#experiment_stuToolbar'
         });
 
+        /*选择班级时触发的事件*/
+        $("#organizationid").combobox({
+            onSelect:function(record){
+                current_organization_id = record.value;
+                experiment_stu_experiment_stuDataGrid.datagrid({
+                    url : '${path }/dbexperiment_stu/experimentStuByExpno',
+                    queryParams:{
+                            expno: current_experiment_no,
+                            organization_id : record.value
+                        }
+                });
+            }
+		});
     });
 
     function test_experiment_stuFun() {
@@ -137,6 +159,7 @@
     }
 
 
+
 </script>
 <div class="easyui-layout" data-options="fit:true,border:false">
     <div data-options="region:'west',border:true,split:false,title:'课程设计实验列表'"  style="width:300px;overflow: hidden; ">
@@ -149,6 +172,13 @@
 </div>
 
 <div id="experiment_stuToolbar" style="display: none;">
+选择班级<select id="organizationid" name="organizationid"  onchange="organization_change()" class="easyui-combobox" data-options="width:200,height:29,editable:false,panelHeight:'auto'">
+    <option value='-1'>全部</option>
+    <c:forEach items="${organizations}" var="organization" >
+        <option value="${organization.id}">${organization.name}</option>
+    </c:forEach>
+</select>
+
     <shiro:hasPermission name="/dbexpfiles/add">
         <a onclick="test_experiment_stuFun();" href="javascript:void(0);" class="easyui-linkbutton" data-options="plain:true,iconCls:'fi-plus icon-green'">测试选中作业</a>
     </shiro:hasPermission>

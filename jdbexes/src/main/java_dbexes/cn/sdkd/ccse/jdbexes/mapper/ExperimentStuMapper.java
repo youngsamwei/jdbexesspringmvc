@@ -4,6 +4,7 @@ import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import com.wangzhixuan.commons.result.PageInfo;
+import com.wangzhixuan.model.Organization;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -25,6 +26,9 @@ public interface ExperimentStuMapper extends BaseMapper<ExperimentStu> {
 
     @Select("select expstuno,expno,'' as expname, stuno,'' as stuname, selectedtime,`status` , teststatus FROM experiment_stu e WHERE e.expstuno = #{expstuno}")
     ExperimentStu selectById(@Param("expstuno") Long expstuno);
+
+    @Select("select * from organization where id in (select organization_id from user join experiment_stu es on `user`.id = es.stuno)")
+    List<Organization> selectOrganizations();
 
     boolean updateStatusDesc(@Param("stuno")Long stuno,@Param("expno") Long expno, @Param("teststatus") Integer teststatus, @Param("testdesc") String testdesc);
 

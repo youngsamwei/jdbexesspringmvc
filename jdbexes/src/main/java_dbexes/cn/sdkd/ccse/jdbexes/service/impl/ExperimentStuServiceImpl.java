@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.commons.result.Tree;
+import com.wangzhixuan.model.Organization;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -102,6 +103,11 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
     @Override
     public ExperimentStu selectById(Long expstuno) {
         return experimentStuMapper.selectById(expstuno);
+    }
+
+    @Override
+    public List<Organization> selectOrganizations() {
+        return experimentStuMapper.selectOrganizations();
     }
 
 

@@ -149,6 +149,7 @@ public class JPlagServiceImpl implements IJPlagService {
                     op.flush();
                     op.close();
                 }else{
+                    /*TODO: 如果为null，是否需要创建？*/
                     logger.error("efs is null : " + estf.getExperiment_files_stu_no());
                 }
             } catch (UnsupportedEncodingException e) {
@@ -344,7 +345,7 @@ public class JPlagServiceImpl implements IJPlagService {
                 cn.sdkd.ccse.jdbexes.model.Experiment exp = experimentService.selectById(expno);
                 e = new cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment(expno, exp.getExpname(), "");
                 e = experimentRepository.save(e);
-                logger.info("checkExistStudentExperiment 增加学生：" + stuno);
+                logger.info("checkExistStudentExperiment 增加实验：" + stuno);
             }
     }
 

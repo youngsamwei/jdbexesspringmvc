@@ -6,6 +6,7 @@ import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import cn.sdkd.ccse.jdbexes.service.*;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
+import com.wangzhixuan.model.Organization;
 import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
 import jplag.ExitException;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.validation.Valid;
 import java.io.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -53,8 +55,10 @@ public class ExperimentStuController extends BaseController {
         return "jdbexes/experiment/experiment_stu";
     }
 
-    @GetMapping("/manager4Teacher")
-    public String manager4Teacher(){
+    @RequestMapping("/manager4Teacher")
+    public String manager4Teacher(Model model){
+        List<Organization> organizations = experimentStuService.selectOrganizations();
+        model.addAttribute("organizations", organizations);
         return "jdbexes_admin/experiment_stu/experiment_stu";
     }
     /**
@@ -192,10 +196,11 @@ public class ExperimentStuController extends BaseController {
 
     @PostMapping("/experimentStuByExpno")
     @ResponseBody
-    public Object experimentStuByExpno(Integer page, Integer rows, String sort, String order, Long expno){
+    public Object experimentStuByExpno(Integer page, Integer rows, String sort, String order, Long expno, @RequestParam("organization_id") Long organization_id){
         PageInfo pageInfo = new PageInfo(page, rows, sort, order);
         Map<String, Object> condition = new HashMap<String, Object>();
         condition.put("expno", expno);
+        condition.put("organization_id", organization_id);
         pageInfo.setCondition(condition);
         experimentStuService.experimentStuByExpno(pageInfo);
         return pageInfo;
