@@ -114,10 +114,9 @@ public class JPlagServiceImpl implements IJPlagService {
     @PostConstruct
     /*构造函数完成后开始:初始化已有作业*/
     private void initSubmissions() throws ExitException {
-
-        EntityWrapper<ExperimentStuTest> ew = new EntityWrapper<ExperimentStuTest>();
-        /*先读取每个测试*/
-        List<ExperimentStuTest> lest = experimentStuTestService.selectList(ew);
+        logger.info("处理未计算相似度的作业");
+        /*查询未计算相似度的作业*/
+        List<ExperimentStuTest> lest = experimentStuTestService.selectListUnCompare();
 
         for (ExperimentStuTest est : lest) {
             initOneTest(est);
@@ -129,7 +128,9 @@ public class JPlagServiceImpl implements IJPlagService {
     }
 
     private void initOneTest(ExperimentStuTest est) {
+
         User u = userService.selectById(est.getStuno());
+        logger.info("正在处理" + u.getLoginName() + ":" + u.getName() +"提交的实验编号为:" + est.getExpno() + "的作业.");
             /*在读取每个测试的代码文件*/
         List<ExperimentStuTestFiles> lestf = experimentStuTestFilesService.selectListByTestno(est.getExperiment_stu_test_no().longValue());
         String path = this.submitTempDir + "/test-" + u.getLoginName() + "_" + u.getName() + "_" + est.getExpno() + "_" + est.getExperiment_stu_test_no() + "/";//UUID.randomUUID().toString() + "/";
@@ -153,10 +154,16 @@ public class JPlagServiceImpl implements IJPlagService {
                     logger.error("efs is null : " + estf.getExperiment_files_stu_no());
                 }
             } catch (UnsupportedEncodingException e) {
+                experimentStuService.updateSimStatus(est.getStuno().longValue(), est.getExpno().longValue(),
+                        1, e.getMessage());
                 logger.error(e.getMessage());
             } catch (FileNotFoundException e) {
+                experimentStuService.updateSimStatus(est.getStuno().longValue(), est.getExpno().longValue(),
+                        1, e.getMessage());
                 logger.error(e.getMessage());
             } catch (IOException e) {
+                experimentStuService.updateSimStatus(est.getStuno().longValue(), est.getExpno().longValue(),
+                        1, e.getMessage());
                 logger.error(e.getMessage());
             } finally {
                 try {
@@ -196,12 +203,13 @@ public class JPlagServiceImpl implements IJPlagService {
                     threadPoolExecutor.execute(jPlagJob);
                 }
             } catch (ExitException e) {
+                experimentStuService.updateSimStatus(est.getStuno().longValue(), est.getExpno().longValue(),
+                        1, e.getMessage());
                 logger.error(e.getMessage());
 
             }
         }
         FileUtils.removeDir(path);
-
 
     }
 

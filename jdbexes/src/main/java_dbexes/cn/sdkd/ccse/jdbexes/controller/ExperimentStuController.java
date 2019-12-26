@@ -247,6 +247,7 @@ public class ExperimentStuController extends BaseController {
         return renderError("上传失败！");
     }
 
+    /**/
     @PostMapping("/check")
     @ResponseBody
     public Object check(Long expno) {
@@ -256,7 +257,6 @@ public class ExperimentStuController extends BaseController {
 
         experimentStuService.updateSimStatus(getUserId(), expno, -1, "正在计算相似度");
         jPlagService.submitJob(getUserId(), expno);
-
 
         return renderSuccess("开始测试");
     }
@@ -269,10 +269,18 @@ public class ExperimentStuController extends BaseController {
         String[] expnoArray = expstunos.split(",");
         for(String expstuno : expnoArray) {
             checkMissionService.submitJob(Long.parseLong(expstuno));
+
+            ExperimentStu es = experimentStuService.selectById(Long.parseLong(expstuno));
+//
+            logger.info("正在处理 " + es.getStuno() + " : " + es.getExpno());
+//            experimentStuService.updateSimStatus(es.getStuno(), es.getExpno(), -1, "重新计算相似度");
+//            jPlagService.submitJob(es.getStuno(), es.getExpno());
+            /*如果计算过程中出现错误，则需要提示错误信息*/
         }
 
         return renderSuccess("开始批量测试");
     }
+
 
     @PostMapping(value = "/tree")
     @ResponseBody

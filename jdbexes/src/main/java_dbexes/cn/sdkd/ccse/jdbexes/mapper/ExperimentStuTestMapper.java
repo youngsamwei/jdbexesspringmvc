@@ -22,6 +22,17 @@ public interface ExperimentStuTestMapper extends BaseMapper<ExperimentStuTest> {
             " from experiment_stu_test where stuno = #{stuno} ")
     List<ExperimentStuTest> selectListByUser(@Param("stuno") Long stuno);
 
+    /*查询未计算相似度的提交*/
+    @Select(" select est1.* " +
+            " from experiment_stu_test est1 join ( " +
+            " select max(est.experiment_stu_test_no) experiment_stu_test_no " +
+            " from experiment_stu_test est join  " +
+            " (select expno, stuno from experiment_stu es where simstatus < 0 and teststatus > 0) es  " +
+            " on est.expno = es.expno and est.stuno = es.stuno " +
+            " group by est.expno, est.stuno " +
+            " ) est2 on est1.experiment_stu_test_no = est2.experiment_stu_test_no")
+    List<ExperimentStuTest> selectListUnCompare();
+
     List<Map<String, Object>> selectDataGridByUser(Pagination page, @Param("stuno") Long stuno);
 
     List<Map<String, Object>> selectDataGridByExpno(Pagination page, Map<String, Object> params);

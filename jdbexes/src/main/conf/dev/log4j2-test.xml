@@ -34,6 +34,7 @@
         <!-- 业务debug日志 -->
         <logger name="com.wangzhixuan" level="WARN"/>
 
+        <logger name="cn.sdkd.ccse.jdbexes" level="INFO"/>
         <logger name="cn.sdkd.ccse.commons.utils" level="DEBUG"/>
         <logger name="cn.sdkd.ccse.jdbexes.service.impl.JPlagJob" level="DEBUG"/>
         
