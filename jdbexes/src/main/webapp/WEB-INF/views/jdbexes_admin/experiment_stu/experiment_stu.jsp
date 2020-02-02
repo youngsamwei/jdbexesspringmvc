@@ -84,7 +84,11 @@
                           if (row.simstatus == 0){
                               return "正常";
                           }else{
-                              return value;
+                              str = $.formatString(
+                                  "<a href='javascript:void(0)' onclick='open_simcheck_log_experiment_stu_fun({0});' >{1}</a>",
+                                  row.expstuno,
+                                  value);
+                              return str;
                           }
                   }
               }, {
@@ -156,6 +160,21 @@
                         }
                     } ]
                 });
+    }
+
+    function open_simcheck_log_experiment_stu_fun(expstuno){
+        parent.$.modalDialog({
+            title : '相似的提交',
+            width : 900,
+            height : 700,
+            href : '${path }/dbexperiment_stu/openSimCheckResultPage?expstuno=' + expstuno,
+            buttons : [ {
+                text : '关闭',
+                handler : function() {
+                    parent.$.modalDialog.handler.dialog('close');
+                }
+            } ]
+        });
     }
 
 

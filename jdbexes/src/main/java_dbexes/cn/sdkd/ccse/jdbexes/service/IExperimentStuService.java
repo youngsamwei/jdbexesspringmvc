@@ -2,6 +2,7 @@ package cn.sdkd.ccse.jdbexes.service;
 
 import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStuSim;
 import com.baomidou.mybatisplus.service.IService;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.commons.result.Tree;
@@ -22,6 +23,8 @@ public interface IExperimentStuService extends IService<ExperimentStu> {
 
     ExperimentStu selectById(Long expstuno);
 
+    ExperimentStu selectByStunoExpno(Long stuno, Long expno);
+
     /*查询学生所属的班级*/
     List<Organization> selectOrganizations();
 
@@ -41,4 +44,8 @@ public interface IExperimentStuService extends IService<ExperimentStu> {
      * @return
      */
     boolean refreshCache();
+
+    ExperimentStuSim getSimResult(Long expstuno);
+
+    Integer updateSimResult(Long expstuno, String result);
 }

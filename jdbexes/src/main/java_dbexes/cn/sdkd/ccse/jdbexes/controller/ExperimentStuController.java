@@ -3,6 +3,7 @@ package cn.sdkd.ccse.jdbexes.controller;
 import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStuSim;
 import cn.sdkd.ccse.jdbexes.service.*;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
@@ -134,6 +135,15 @@ public class ExperimentStuController extends BaseController {
             }
         }
         model.addAttribute("logText", logText);
+        return "jdbexes/experiment/experiment_stuOpenTestLog";
+    }
+
+    @RequestMapping("/openSimCheckResultPage")
+    public Object openSimCheckResultPage(Model model, @RequestParam("expstuno") Long expstuno) {
+        ExperimentStuSim experimentStuSim = experimentStuService.getSimResult(expstuno);
+        if (experimentStuSim != null) {
+            model.addAttribute("logText", experimentStuSim.getResult());
+        }
         return "jdbexes/experiment/experiment_stuOpenTestLog";
     }
 

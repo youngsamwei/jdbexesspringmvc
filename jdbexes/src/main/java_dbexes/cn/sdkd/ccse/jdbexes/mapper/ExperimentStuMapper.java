@@ -27,6 +27,9 @@ public interface ExperimentStuMapper extends BaseMapper<ExperimentStu> {
     @Select("select expstuno,expno,'' as expname, stuno,'' as stuname, selectedtime,`status` , teststatus FROM experiment_stu e WHERE e.expstuno = #{expstuno}")
     ExperimentStu selectById(@Param("expstuno") Long expstuno);
 
+    @Select("select expstuno,expno,'' as expname, stuno,'' as stuname, selectedtime,`status` , teststatus FROM experiment_stu e WHERE e.stuno = #{stuno} AND e.expno = #{expno}")
+    ExperimentStu selectByStunoExpno(@Param("stuno") Long stuno, @Param("expno") Long expno);
+
     @Select("select * from organization where id in (select organization_id from user join experiment_stu es on `user`.id = es.stuno)")
     List<Organization> selectOrganizations();
 

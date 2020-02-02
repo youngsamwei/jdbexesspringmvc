@@ -3,6 +3,7 @@ package cn.sdkd.ccse.jdbexes.service;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.relationships.Similarity;
+import com.wangzhixuan.model.User;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -25,4 +26,8 @@ public interface INeo4jService {
     Object findSimilaritiesBySimValueStudentid(@Param("sim") float sim, @Param("stuid") Long stuid);
 
     List<Similarity> findSimilaritiesBySimValueExperimentidStudentid(@Param("sim") float sim, @Param("expid") Long expid, @Param("stuid") Long stuid);
+
+    boolean createStudentIfNotExists(User user);
+
+    boolean createExperimentIfNotExists(cn.sdkd.ccse.jdbexes.model.Experiment experiment);
 }
