@@ -41,6 +41,7 @@
             idField : 'expstuno',
             sortName : 'login_name',
             sortOrder : 'asc',
+            remoteSort: false,
             pageSize : 20,
             pageList : [ 10, 20, 30, 40, 50, 100, 200, 300, 400, 500 ],
             frozenColumns : [ [  {
@@ -80,6 +81,21 @@
                   title : '相似度描述',
                   field : 'simdesc',
                   sortable : true,
+                  // 定义根据相似度排序的方法
+                  sorter : function(a, b) {
+                      // 找到字符串中第一个数字作为排序依据
+                      // 格式：与(\d+)个同学的作业相似度超过xx%.
+                      const aa = a.match(/\d+/);
+                      const bb = b.match(/\d+/);
+                      if (!aa) return -1;
+                      if (!bb) return 1;
+                      const an = parseInt(aa.shift());
+                      const bn = parseInt(bb.shift());
+                      if (isNaN(an)) return -1;
+                      if (isNaN(bn)) return 1;
+
+                      return an > bn ? 1 : -1;
+                  },
                   formatter : function(value, row, index){
                           if (row.simstatus == 0){
                               return "正常";
