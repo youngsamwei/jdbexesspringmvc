@@ -24,6 +24,7 @@
 <label for="simValue">相似度阈值</label>
 <input name="simValue" id="simValue" type="text" placeholder="请输入相似度" class="easyui-numberbox span2"
        style="width: 50px; height: 20px;" data-options="required:true" value="100">
+
 <label for="expid">选择实验</label>
 <select id="expid" name="expid" class="easyui-combobox"
         data-options="width:200,height:29,editable:false,panelHeight:'auto'">
@@ -39,6 +40,15 @@
     <option>全部</option>
     <c:forEach items="${students}" var="student">
         <option value="${student.studentid}">${student.sno}_${student.name}</option>
+    </c:forEach>
+</select>
+
+<label for="organizationid">选择班级</label>
+<select id="organizationid" id="organizationid" class="easyui-combobox"
+        data-options="width:200,height:29,editable:false,panelHeight:'auto'">
+    <option>全部</option>
+    <c:forEach items="${organizations}" var="organization">
+        <option value="${organization.id}">${organization.name}</option>
     </c:forEach>
 </select>
 
@@ -84,11 +94,13 @@
 
     function findSimilaritiesBySimValue() {
         progressLoad();
+
+        // 按相似度、学生、实验进行筛选
         const simValue = $('#simValue').numberbox('getValue');
         const exp_filter = $('#expid').combobox('getValue');
         const stu_filter = $('#stuid').combobox('getValue');
         const data = {simValue: simValue};
-        let url = 'getSimilarities';
+        let url = '/graph/getSimilarities';
         if (exp_filter !== '全部' && stu_filter !== '全部') {
             url = '/graph/getSimilaritiesBySimValueExperimentidStudentid';
             data.stuid = stu_filter;
@@ -101,21 +113,52 @@
             data.stuid = stu_filter;
         }
 
+        // 查询拓扑图数据
         $.ajax({
             url: url, async: true, data: data,
             success: function (ret) {
                 if (ret) {
                     const result = $.parseJSON(ret);
-                    console.info(result);
-                    nodes.clear();
-                    edges.clear();
-                    createSimilarityNetwork(result);
+                    // console.info(result);
+
+                    // 按班级进行筛选
+                    const organization_id = $('#organizationid').combobox('getValue');
+                    if (organization_id !== '全部') {
+                        $.ajax({ // 查询当前班级的所有学生编号
+                            url: '/graph/getStudentIdByOrganizationId',
+                            async: true,
+                            data: {organization_id: organization_id},
+                            success: function (ret) {
+                                const ids = $.parseJSON(ret);
+                                // console.info(ids);
+                                nodes.clear();
+                                edges.clear();
+                                createSimilarityNetwork(filterWithStudentId(result, ids));
+                            }
+                        })
+                    }
                 } else {
                     layer.msg("查询失败");
                 }
                 progressClose();
             }
         });
+    }
+
+    function filterWithStudentId(content, ids) {
+        const student_filter = new Set();
+        for (let i = 0; i < ids.length; ++i) {
+            student_filter.add(ids[i])
+        }
+        const result = [];
+        for (let i = 0; i < content.length; ++i) {
+            const c = content[i];
+            if (student_filter.has(c.a1.students[0].studentid)
+                && student_filter.has(c.a2.students[0].studentid)) {
+                result.push(c);
+            }
+        }
+        return result;
     }
 
     /**

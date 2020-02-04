@@ -114,4 +114,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         userRoleMapper.deleteByUserId(id);
     }
 
+    @Override
+    public List<Long> selectStudentIdByOrganizationId(Long organization_id) {
+        return userMapper.selectStudentIdByOrganizationId(organization_id);
+    }
+
 }

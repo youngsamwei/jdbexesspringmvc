@@ -27,4 +27,6 @@ public interface IUserService extends IService<User> {
     void selectDataGrid(PageInfo pageInfo);
 
     void deleteUserById(Long id);
+
+    List<Long> selectStudentIdByOrganizationId(Long organization_id);
 }

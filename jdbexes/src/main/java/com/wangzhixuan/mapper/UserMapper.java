@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import com.wangzhixuan.model.User;
 import com.wangzhixuan.model.vo.UserVo;
+import org.apache.ibatis.annotations.Select;
 
 /**
  *
@@ -20,5 +21,8 @@ public interface UserMapper extends BaseMapper<User> {
     UserVo selectUserVoById(@Param("id") Long id);
 
     List<Map<String, Object>> selectUserPage(Pagination page, Map<String, Object> params);
+
+    @Select("SELECT u.id FROM User u WHERE u.organization_id = #{organization_id}")
+    List<Long> selectStudentIdByOrganizationId(@Param("organization_id") Long organization_id);
 
 }
