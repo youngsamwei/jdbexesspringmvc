@@ -1,8 +1,6 @@
 package cn.sdkd.ccse.jdbexes.service;
 
-import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
-import cn.sdkd.ccse.jdbexes.model.ExperimentStuSim;
 import com.baomidou.mybatisplus.service.IService;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.commons.result.Tree;
@@ -45,7 +43,4 @@ public interface IExperimentStuService extends IService<ExperimentStu> {
      */
     boolean refreshCache();
 
-    ExperimentStuSim getSimResult(Long expstuno);
-
-    Integer updateSimResult(Long expstuno, String result);
 }

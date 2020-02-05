@@ -80,32 +80,21 @@ class JPlagJob implements Runnable {
 
         // 获取相似度比较结果，写入数据库
         float sim = 90f;
-        updateSimStatus(a1.getId(), sim);
+        updateSimStatus(a1, sim);
     }
 
     /**
      * 获取相似度比较结果，写入数据库
-     * @param assignmentid 提交id
-     * @param sim          阈值
+     * @param assignment    提交
+     * @param sim           相似度阈值
      */
-    private void updateSimStatus(Long assignmentid, float sim) {
-        List<Student> lss = this.studentRepository.findBySimValueAssignmentid(sim, assignmentid);
-        StringBuilder simResult = new StringBuilder();
-        for (Student ss : lss) {
-            logger.info(ss.getName());
-            simResult.append(ss.getName());
-            simResult.append('\n');
-        }
-
-        ExperimentStu experimentStu = experimentStuService.selectByStunoExpno(this.stuno, this.expno);
-        Long expstuno = experimentStu.getExpstuno();
+    private void updateSimStatus(Assignment assignment, float sim) {
+        List<Student> lss = this.studentRepository.findBySimValueAssignmentid(sim, assignment.getId());
 
         // 若相似度超过阈值的学生个数大于0，则状态是3，否则状态是0
         if (lss.size() > 0) {
-            experimentStuService.updateSimResult(expstuno, simResult.toString());
             experimentStuService.updateSimStatus(this.stuno, this.expno, 3, "与" + lss.size() + "个同学的作业相似度超过" + sim + "%.");
         } else {
-            experimentStuService.updateSimResult(expstuno, "");
             experimentStuService.updateSimStatus(this.stuno, this.expno, 0, "与" + lss.size() + "个同学的作业相似度超过" + sim + "%.");
         }
     }

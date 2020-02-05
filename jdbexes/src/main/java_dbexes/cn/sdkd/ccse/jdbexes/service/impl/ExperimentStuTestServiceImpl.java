@@ -31,4 +31,9 @@ public class ExperimentStuTestServiceImpl extends ServiceImpl<ExperimentStuTestM
     public List<ExperimentStuTest> selectListUnCompare() {
         return experimentStuTestMapper.selectListUnCompare();
     }
+
+    @Override
+    public ExperimentStuTest findLatestByUserExperiment(Long stuno, Long expno) {
+        return experimentStuTestMapper.selectLatestByUserExperiment(stuno, expno);
+    }
 }

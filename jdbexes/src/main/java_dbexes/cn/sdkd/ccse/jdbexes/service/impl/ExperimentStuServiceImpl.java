@@ -3,9 +3,7 @@ package cn.sdkd.ccse.jdbexes.service.impl;
 
 import cn.sdkd.ccse.jdbexes.mapper.ExperimentMapper;
 import cn.sdkd.ccse.jdbexes.mapper.ExperimentStuMapper;
-import cn.sdkd.ccse.jdbexes.mapper.ExperimentStuSimMapper;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
-import cn.sdkd.ccse.jdbexes.model.ExperimentStuSim;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
@@ -29,8 +27,6 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
     private ExperimentStuMapper experimentStuMapper;
     @Autowired
     private ExperimentMapper experimentMapper;
-    @Autowired
-    private ExperimentStuSimMapper experimentStuSimMapper;
 
     public List<ExperimentStu> selectAll() {
         EntityWrapper<ExperimentStu> wrapper = new EntityWrapper<ExperimentStu>();
@@ -137,13 +133,4 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
         return experimentStuMapper.selectByStunoExpno(stuno, expno);
     }
 
-    @Override
-    public ExperimentStuSim getSimResult(Long expstuno) {
-        return experimentStuSimMapper.selectById(expstuno);
-    }
-
-    @Override
-    public Integer updateSimResult(Long expstuno, String result) {
-        return experimentStuSimMapper.updateResult(expstuno, result);
-    }
 }

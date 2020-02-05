@@ -1,16 +1,16 @@
 package cn.sdkd.ccse.jdbexes.controller;
 
-import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
-import cn.sdkd.ccse.jdbexes.model.ExperimentStuSim;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.service.*;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.model.Organization;
 import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
-import jplag.ExitException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -46,9 +46,14 @@ public class ExperimentStuController extends BaseController {
     @Autowired
     private IUserService userService;
 
+    @Autowired
+    private IExperimentStuTestService experimentStuTestService;
+
+    @Autowired
+    private INeo4jService neo4jService;
+
     /**
      * 实验管理页
-     *
      * @return
      */
     @GetMapping("/manager")
@@ -57,14 +62,14 @@ public class ExperimentStuController extends BaseController {
     }
 
     @RequestMapping("/manager4Teacher")
-    public String manager4Teacher(Model model){
+    public String manager4Teacher(Model model) {
         List<Organization> organizations = experimentStuService.selectOrganizations();
         model.addAttribute("organizations", organizations);
         return "jdbexes_admin/experiment_stu/experiment_stu";
     }
+
     /**
      * 添加实验页
-     *
      * @return
      */
     @GetMapping("/addPage")
@@ -74,7 +79,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 编辑页
-     *
      * @param model
      * @param id
      * @return
@@ -140,16 +144,37 @@ public class ExperimentStuController extends BaseController {
 
     @RequestMapping("/openSimCheckResultPage")
     public Object openSimCheckResultPage(Model model, @RequestParam("expstuno") Long expstuno) {
-        ExperimentStuSim experimentStuSim = experimentStuService.getSimResult(expstuno);
-        if (experimentStuSim != null) {
-            model.addAttribute("logText", experimentStuSim.getResult());
+        ExperimentStu experimentStu = experimentStuService.selectById(expstuno);
+        ExperimentStuTest experimentStuTest = experimentStuTestService.findLatestByUserExperiment(experimentStu.getStuno(), experimentStu.getExpno());
+        if (experimentStuTest == null) {
+            model.addAttribute("logText", "未查询到相应 ExperimentStuTest");
+            return "jdbexes/experiment/experiment_stuOpenTestLog";
         }
+        long experiment_stu_test_no = experimentStuTest.getExperiment_stu_test_no();
+        Assignment assignment = neo4jService.findAssignmentByExperimentStuTestNo(experiment_stu_test_no);
+        logger.debug("assignment id: " + experiment_stu_test_no);
+        if (assignment == null) {
+            model.addAttribute("logText", "未查询到相应 Assignment");
+            return "jdbexes/experiment/experiment_stuOpenTestLog";
+        }
+
+        logger.debug("node id: " + assignment.getId());
+
+        float sim = 0.9f;
+        List<Student> students = neo4jService.findStudentBySimValueAssignmentid(sim, assignment.getId());
+
+        StringBuilder simResult = new StringBuilder();
+        for (Student student : students) {
+            simResult.append(student.getName());
+            simResult.append('\n');
+        }
+
+        model.addAttribute("logText", simResult.toString());
         return "jdbexes/experiment/experiment_stuOpenTestLog";
     }
 
     /**
      * 添加实验选择
-     *
      * @param expnos
      * @return
      */
@@ -162,7 +187,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 删除
-     *
      * @param id
      * @return
      */
@@ -176,7 +200,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 更新
-     *
      * @param experimentStu
      * @return
      */
@@ -189,7 +212,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 实验列表
-     *
      * @param page
      * @param rows
      * @param sort
@@ -206,7 +228,7 @@ public class ExperimentStuController extends BaseController {
 
     @PostMapping("/experimentStuByExpno")
     @ResponseBody
-    public Object experimentStuByExpno(Integer page, Integer rows, String sort, String order, Long expno, @RequestParam("organization_id") Long organization_id){
+    public Object experimentStuByExpno(Integer page, Integer rows, String sort, String order, Long expno, @RequestParam("organization_id") Long organization_id) {
         PageInfo pageInfo = new PageInfo(page, rows, sort, order);
         Map<String, Object> condition = new HashMap<String, Object>();
         condition.put("expno", expno);
@@ -277,7 +299,7 @@ public class ExperimentStuController extends BaseController {
 
         logger.info("开始批量测试代码.");
         String[] expnoArray = expstunos.split(",");
-        for(String expstuno : expnoArray) {
+        for (String expstuno : expnoArray) {
             checkMissionService.submitJob(Long.parseLong(expstuno));
 
             ExperimentStu es = experimentStuService.selectById(Long.parseLong(expstuno));

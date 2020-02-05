@@ -1,5 +1,6 @@
 package cn.sdkd.ccse.jdbexes.service.impl;
 
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.relationships.Similarity;
@@ -101,6 +102,17 @@ public class Neo4jServiceImpl implements INeo4jService {
             experimentRepository.save(e);
         }
         return true;
+    }
+
+    @Override
+    public List<Student> findStudentBySimValueAssignmentid(float sim, long id) {
+        return studentRepository.findBySimValueAssignmentid(sim, id);
+    }
+
+    @Override
+    public Assignment findAssignmentByExperimentStuTestNo(long experiment_stu_test_no) {
+        // 要求维持 experiment_stu_test_no === assignmentid
+        return assignmentRepository.findByAssignmentid(experiment_stu_test_no);
     }
 
 }

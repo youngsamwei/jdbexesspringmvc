@@ -1,5 +1,6 @@
 package cn.sdkd.ccse.jdbexes.service;
 
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.relationships.Similarity;
@@ -7,8 +8,6 @@ import com.wangzhixuan.model.User;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by sam on 2019/1/14.
@@ -30,4 +29,8 @@ public interface INeo4jService {
     boolean createStudentIfNotExists(User user);
 
     boolean createExperimentIfNotExists(cn.sdkd.ccse.jdbexes.model.Experiment experiment);
+
+    List<Student> findStudentBySimValueAssignmentid(float sim, long id);
+
+    Assignment findAssignmentByExperimentStuTestNo(long experiment_stu_test_no);
 }
