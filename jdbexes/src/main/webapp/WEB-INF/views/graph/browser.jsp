@@ -131,11 +131,17 @@
                             success: function (ret) {
                                 const ids = $.parseJSON(ret);
                                 // console.info(ids);
+                                // 更新网络
                                 nodes.clear();
                                 edges.clear();
                                 createSimilarityNetwork(filterWithStudentId(result, ids));
                             }
                         })
+                    } else {
+                        // 更新网络
+                        nodes.clear();
+                        edges.clear();
+                        createSimilarityNetwork(result);
                     }
                 } else {
                     layer.msg("查询失败");
