@@ -6,6 +6,7 @@ import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.service.*;
+import cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.model.Organization;
@@ -19,9 +20,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Controller
@@ -160,8 +160,7 @@ public class ExperimentStuController extends BaseController {
 
         logger.debug("node id: " + assignment.getId());
 
-        float sim = 0.9f;
-        List<Student> students = neo4jService.findStudentBySimValueAssignmentid(sim, assignment.getId());
+        List<Student> students = neo4jService.findStudentBySimValueAssignmentid(Configuration.SIM_THRESHOLD, assignment.getId());
 
         StringBuilder simResult = new StringBuilder();
         for (Student student : students) {
@@ -296,18 +295,34 @@ public class ExperimentStuController extends BaseController {
     @PostMapping("/checkBatch")
     @ResponseBody
     public Object checkBatch(String expstunos) {
+        if (expstunos.isEmpty()) {
+            return renderSuccess("没有合适的参数");
+        }
 
-        logger.info("开始批量测试代码.");
-        String[] expnoArray = expstunos.split(",");
-        for (String expstuno : expnoArray) {
-            checkMissionService.submitJob(Long.parseLong(expstuno));
+        String[] expsutnoArray = expstunos.split(",");
 
-            ExperimentStu es = experimentStuService.selectById(Long.parseLong(expstuno));
-//
-            logger.info("正在处理 " + es.getStuno() + " : " + es.getExpno());
-//            experimentStuService.updateSimStatus(es.getStuno(), es.getExpno(), -1, "重新计算相似度");
-//            jPlagService.submitJob(es.getStuno(), es.getExpno());
-            /*如果计算过程中出现错误，则需要提示错误信息*/
+        logger.info("开始批量测试代码：" + Arrays.toString(expsutnoArray));
+
+        List<Long> expstunoList = Arrays.stream(expsutnoArray)
+                .map(x -> Long.valueOf(x))
+                .collect(Collectors.toList());
+
+        // 重新测试代码
+        for (Long expstuno : expstunoList) {
+            logger.debug("测试代码 expstuno=" + expstuno);
+            checkMissionService.submitJob(expstuno);
+        }
+
+        // 刷新计算相似度
+        List<ExperimentStu> experimentStuList = expstunoList.stream()
+                .map(x -> experimentStuService.selectById(x))
+                .collect(Collectors.toList());
+        for (ExperimentStu es : experimentStuList) {
+            logger.debug("测试相似度 stuno=" + es.getStuno() + ", expno=" + es.getExpno());
+            experimentStuService.updateSimStatus(es.getStuno(), es.getExpno(), -1, "重新计算相似度");
+        }
+        for (ExperimentStu es : experimentStuList) {
+            jPlagService.refreshSimStatus(es.getStuno(), es.getExpno());
         }
 
         return renderSuccess("开始批量测试");

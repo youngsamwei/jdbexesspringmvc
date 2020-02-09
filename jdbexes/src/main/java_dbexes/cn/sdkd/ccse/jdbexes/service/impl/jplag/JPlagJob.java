@@ -94,9 +94,9 @@ class JPlagJob implements Runnable {
 
         // 若相似度超过阈值的学生个数大于0，则状态是3，否则状态是0
         if (lss.size() > 0) {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, 3, "与" + lss.size() + "个同学的作业相似度超过" + SIM_THRESHOLD + "%.");
+            experimentStuService.updateSimStatus(this.stuno, this.expno, 3, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
         } else {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, 0, "与" + lss.size() + "个同学的作业相似度超过" + SIM_THRESHOLD + "%.");
+            experimentStuService.updateSimStatus(this.stuno, this.expno, 0, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
         }
     }
 

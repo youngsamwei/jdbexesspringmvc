@@ -30,4 +30,5 @@ public interface IJPlagService {
 
     void submitJob(Long stuno, Long expno);
 
+    void refreshSimStatus(Long stuno, Long expno);
 }

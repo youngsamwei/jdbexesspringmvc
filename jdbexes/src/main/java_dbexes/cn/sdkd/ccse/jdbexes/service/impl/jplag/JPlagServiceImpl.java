@@ -2,16 +2,16 @@ package cn.sdkd.ccse.jdbexes.service.impl.jplag;
 
 import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
-import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStuTestFiles;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
+import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IAssignmentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IExperimentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.ISimilarityRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IStudentRepository;
 import cn.sdkd.ccse.jdbexes.service.*;
 import com.wangzhixuan.model.User;
-import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
 import jplag.*;
 import jplag.options.CommandLineOptions;
@@ -39,6 +39,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD;
+import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD_MIN;
 
 @Service("JPlagService")
 public class JPlagServiceImpl implements IJPlagService {
@@ -74,7 +77,6 @@ public class JPlagServiceImpl implements IJPlagService {
     private Program program;
     // submissions <实验编号,<名称，作业>>
     private ConcurrentHashMap<String, ConcurrentHashMap<String, Submission>> submissions;
-    private float simThreshold = 50;
 
     public JPlagServiceImpl() throws ExitException {
         initProperties();
@@ -137,7 +139,7 @@ public class JPlagServiceImpl implements IJPlagService {
             }
             if (entry.getValue().struct != null) {
                 AllMatches match = this.gSTiling.compare(entry.getValue(), submission);
-                if (match.percent() >= this.simThreshold) {
+                if (match.percent() >= SIM_THRESHOLD_MIN) {
                     avgmatches.insert(match);
                 }
             } else {
@@ -180,7 +182,7 @@ public class JPlagServiceImpl implements IJPlagService {
         for (Map.Entry<String, Submission> entry : expSubmissions.entrySet()) {
             if (entry.getValue().struct != null) {
                 AllMatches match = this.gSTiling.compare(entry.getValue(), submission);
-                if (match.percent() >= this.simThreshold) {
+                if (match.percent() >= SIM_THRESHOLD_MIN) {
                     avgmatches.insert(match);
                 }
             } else {
@@ -202,11 +204,15 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Override
     public void submitJob(Long stuno, Long expno) {
-        UserVo u = userService.selectVoById(stuno);
-        String sno = u.getLoginName();
-        String sname = u.getName();
-        List<ExperimentFilesStuVO> experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(stuno, expno);
+        // 检查 Student 和 Experiment 是否存在，不存在则创建
+        createStudentAndExperimentOnNeo4JIfNotExists(stuno, expno);
+        // 创建一次测试
+        ExperimentStuTest test = generateTest(stuno, expno);
+        // 根据 test 产生文件，解析并提交相似度比较任务
+        initOneTest(test);
+    }
 
+    ExperimentStuTest generateTest(Long stuno, Long expno) {
         // 创建一次测试
         ExperimentStuTest test = new ExperimentStuTest();
         test.setStuno(stuno.intValue());
@@ -215,8 +221,41 @@ public class JPlagServiceImpl implements IJPlagService {
         experimentStuTestService.insert(test);
         // 根据最新的提交文件，产生最近一次测试记录
         experimentStuTestFilesService.insertLatestTestFiles(test.getExperiment_stu_test_no().longValue(), stuno, expno);
-        // 根据 test 产生文件，解析并提交相似度比较任务
-        initOneTest(test);
+        return test;
+    }
+
+    /**
+     * 刷新相似度检查结果
+     * 仅对 Neo4J 进行查询，不新建测试
+     * @param stuno
+     * @param expno
+     */
+    @Override
+    public void refreshSimStatus(Long stuno, Long expno) {
+        ExperimentStuTest test = experimentStuTestService.findLatestByUserExperiment(stuno, expno);
+        if (test == null) {
+            logger.warn("学生实验(" + stuno + ", " + expno + ")：未查询到相应 ExperimentStuTest");
+            experimentStuService.updateSimStatus(stuno, expno, 1, "未查询到相应 ExperimentStuTest");
+//            submitJob(stuno, expno);
+            return;
+        }
+        long experiment_stu_test_no = test.getExperiment_stu_test_no();
+        Assignment assignment = neo4jService.findAssignmentByExperimentStuTestNo(experiment_stu_test_no);
+        if (assignment == null) {
+            experimentStuService.updateSimStatus(stuno, expno, 1, "未查询到相应 Assignment");
+            logger.warn("学生实验(" + stuno + ", " + expno + ")：未查询到相应 Assignment");
+//            initOneTest(test);
+            return;
+        }
+
+        List<Student> lss = this.studentRepository.findBySimValueAssignmentid(SIM_THRESHOLD, assignment.getId());
+        // 若相似度超过阈值的学生个数大于0，则状态是3，否则状态是0
+        if (lss.size() > 0) {
+            experimentStuService.updateSimStatus(stuno, expno, 3, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
+        } else {
+            experimentStuService.updateSimStatus(stuno, expno, 0, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
+        }
+//        initOneTest(test);
     }
 
     private void initProperties() {
@@ -370,6 +409,7 @@ public class JPlagServiceImpl implements IJPlagService {
         try {
             submission.parse();
             if (submission.errors == true || submission.struct == null) {
+                experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), 1, "解析错误");
                 return false;
             }
         } catch (ExitException e) {
