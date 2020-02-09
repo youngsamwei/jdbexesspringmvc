@@ -1,4 +1,4 @@
-package cn.sdkd.ccse.jdbexes.service.impl.jplug;
+package cn.sdkd.ccse.jdbexes.service.impl.jplag;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD;
+
 /**
  * 相似度计算任务
  */
@@ -36,8 +38,6 @@ class JPlagJob implements Runnable {
     private IAssignmentRepository assignmentRepository;
     private ISimilarityRepository similarityRepository;
     private IExperimentRepository experimentRepository;
-
-    private final float SIM_THRESHOLD = 0.9f;
 
     private Submission submission;
 

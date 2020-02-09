@@ -1,4 +1,4 @@
-package cn.sdkd.ccse.jdbexes.service.impl.jplug;
+package cn.sdkd.ccse.jdbexes.service.impl.jplag;
 
 /**
  * 用于生成 JPlag Submission 名称

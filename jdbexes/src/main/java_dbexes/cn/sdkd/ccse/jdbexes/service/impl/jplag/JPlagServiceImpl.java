@@ -1,4 +1,4 @@
-package cn.sdkd.ccse.jdbexes.service.impl.jplug;
+package cn.sdkd.ccse.jdbexes.service.impl.jplag;
 
 import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
@@ -258,7 +258,7 @@ public class JPlagServiceImpl implements IJPlagService {
         // 1. 产生临时文件
         generateTestFile(test, path);
         // 2. 检查并提交相似度比较任务
-        submitJPlugJob(user, test, path);
+        submitJPlagJob(user, test, path);
         // 3. 删除临时文件夹
         FileUtils.removeDir(path.toString());
 
@@ -328,7 +328,7 @@ public class JPlagServiceImpl implements IJPlagService {
      * @param test 测试
      * @param path 临时文件路径
      */
-    private void submitJPlugJob(User user, ExperimentStuTest test, Path path) {
+    private void submitJPlagJob(User user, ExperimentStuTest test, Path path) {
         if (Files.notExists(path)) {
             return;
         }
