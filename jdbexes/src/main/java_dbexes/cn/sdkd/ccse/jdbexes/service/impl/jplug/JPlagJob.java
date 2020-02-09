@@ -1,6 +1,5 @@
 package cn.sdkd.ccse.jdbexes.service.impl.jplug;
 
-import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
@@ -37,6 +36,8 @@ class JPlagJob implements Runnable {
     private IAssignmentRepository assignmentRepository;
     private ISimilarityRepository similarityRepository;
     private IExperimentRepository experimentRepository;
+
+    private final float SIM_THRESHOLD = 0.9f;
 
     private Submission submission;
 
@@ -75,27 +76,27 @@ class JPlagJob implements Runnable {
             // 若不存在已有联系，则创建相似度联系
             SubmissionKey key = SubmissionKey.valueOf(entry.getKey());
             float sim = this.jPlagService.compareSubmission(this.submission, entry.getValue());
-            createEdgeIfNotExist(this.submissionKey, key, sim);
+            if (sim >= SIM_THRESHOLD) {
+                createEdgeIfNotExist(this.submissionKey, key, sim);
+            }
         }
 
         // 获取相似度比较结果，写入数据库
-        float sim = 90f;
-        updateSimStatus(a1, sim);
+        updateSimStatus(a1);
     }
 
     /**
      * 获取相似度比较结果，写入数据库
-     * @param assignment    提交
-     * @param sim           相似度阈值
+     * @param assignment 提交
      */
-    private void updateSimStatus(Assignment assignment, float sim) {
-        List<Student> lss = this.studentRepository.findBySimValueAssignmentid(sim, assignment.getId());
+    private void updateSimStatus(Assignment assignment) {
+        List<Student> lss = this.studentRepository.findBySimValueAssignmentid(SIM_THRESHOLD, assignment.getId());
 
         // 若相似度超过阈值的学生个数大于0，则状态是3，否则状态是0
         if (lss.size() > 0) {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, 3, "与" + lss.size() + "个同学的作业相似度超过" + sim + "%.");
+            experimentStuService.updateSimStatus(this.stuno, this.expno, 3, "与" + lss.size() + "个同学的作业相似度超过" + SIM_THRESHOLD + "%.");
         } else {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, 0, "与" + lss.size() + "个同学的作业相似度超过" + sim + "%.");
+            experimentStuService.updateSimStatus(this.stuno, this.expno, 0, "与" + lss.size() + "个同学的作业相似度超过" + SIM_THRESHOLD + "%.");
         }
     }
 
@@ -123,12 +124,13 @@ class JPlagJob implements Runnable {
             SimpleDateFormat sdf = new SimpleDateFormat(DateString.ISO_8601);
             if (a1.getSubmitDate().after(a2.getSubmitDate())) {
                 similarityRepository.createSimilarity(key1.experiment_stu_test_no, key2.experiment_stu_test_no, sdf.format(new Date()), sim);
+                logger.debug("creating edge " + key1 + " -> " + key2 + ", " + sim);
             } else {
                 similarityRepository.createSimilarity(key2.experiment_stu_test_no, key1.experiment_stu_test_no, sdf.format(new Date()), sim);
+                logger.debug("creating edge " + key2 + " <- " + key1 + ", " + sim);
             }
-            logger.debug("create edge " + key1 + " : " + key2 + ", " + sim);
         } catch (Exception e) {
-            logger.error(e.getMessage() + " create edge " + key1 + " : " + key2 + ", " + sim);
+            logger.error("creating edge " + key1 + " -- " + key2 + ", " + sim);
         }
     }
 
@@ -138,7 +140,9 @@ class JPlagJob implements Runnable {
      */
     private Assignment generateAssignment() throws NullPointerException {
         Assignment a1 = this.assignmentRepository.findByAssignmentid(this.submissionKey.experiment_stu_test_no);
-        if (a1 != null) return a1;
+        if (a1 != null) {
+            return a1;
+        }
 
         a1 = new Assignment();
         a1.setAssignmentid(this.submissionKey.experiment_stu_test_no);
