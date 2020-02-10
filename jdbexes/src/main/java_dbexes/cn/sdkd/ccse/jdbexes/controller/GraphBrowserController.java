@@ -1,10 +1,7 @@
 package cn.sdkd.ccse.jdbexes.controller;
 
-import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
-import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.service.INeo4jService;
 import com.wangzhixuan.commons.base.BaseController;
-import com.wangzhixuan.model.Organization;
 import com.wangzhixuan.service.IOrganizationService;
 import com.wangzhixuan.service.IUserService;
 import org.apache.ibatis.annotations.Param;
@@ -13,8 +10,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-import java.util.List;
 
 /**
  * Created by sam on 2019/1/14.
@@ -31,14 +26,6 @@ public class GraphBrowserController extends BaseController {
 
     @RequestMapping("/browser")
     public String manager(Model model) {
-        List<Student> students = neo4jService.getStudents();
-        List<Experiment> experiments = neo4jService.getExperiments();
-        List<Organization> organizations = organizationService.selectTreeGrid();
-
-        model.addAttribute("students", students);
-        model.addAttribute("experiments", experiments);
-        model.addAttribute("organizations", organizations);
-
         return "graph/browser";
     }
 
@@ -52,6 +39,12 @@ public class GraphBrowserController extends BaseController {
     @ResponseBody
     public Object getStudents() {
         return neo4jService.getStudents();
+    }
+
+    @RequestMapping(value = "/getOrganizations")
+    @ResponseBody
+    public Object getOrganizations() {
+        return organizationService.selectTreeGrid();
     }
 
     @RequestMapping(value = "/getSimilarities")

@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ include file="/commons/global.jsp" %>
 
 <script type="text/javascript" src="${staticPath }/static/neo4j_browser/vis.js" charset="utf-8"></script>
@@ -27,20 +27,64 @@
 
 <label for="expid">选择实验</label>
 <select id="expid" name="expid" class="easyui-combobox"
-        data-options="width:200,height:29,editable:false,panelHeight:'auto'">
-    <option>全部</option>
-    <c:forEach items="${experiments}" var="experiment">
-        <option value="${experiment.experimentid}">${experiment.name}</option>
-    </c:forEach>
+        data-options="width:200, height:29, panelHeight:'auto', editable:false,
+        valueField: 'experimentid',
+        textField: 'name',
+        width:200, height:29, panelHeight:'auto', editable:false,
+        mode: 'remote',
+        url: '/graph/getExperiments',
+        loadFilter: function(data){
+            var opts = $(this).combobox('options');
+            var emptyRow = {};
+            emptyRow[opts.valueField] = '全部';
+            emptyRow[opts.textField] = '全部';
+            data.unshift(emptyRow);
+            return data;
+        },
+        onLoadSuccess: function(items){
+            $(this).combobox('select', '全部');
+        }">
+</select>
+
+<label for="organizationid">选择班级</label>
+<select id="organizationid" name="organizationid" class="easyui-combobox"
+        data-options="width:200, height:29, panelHeight:'auto', editable:false,
+        valueField: 'id',
+        textField: 'name',
+        url: '/graph/getOrganizations',
+        loadFilter: function(data){
+            var opts = $(this).combobox('options');
+            var emptyRow = {};
+            emptyRow[opts.valueField] = '全部';
+            emptyRow[opts.textField] = '全部';
+            data.unshift(emptyRow);
+            return data;
+        },
+        onLoadSuccess: function(items){
+            $(this).combobox('select', '全部');
+        }">
 </select>
 
 <label for="stuid">选择学生</label>
 <select id="stuid" name="stuid" class="easyui-combobox"
-        data-options="width:200,height:29,editable:false,panelHeight:200">
-    <option>全部</option>
-    <c:forEach items="${students}" var="student">
-        <option value="${student.studentid}">${student.sno}_${student.name}</option>
-    </c:forEach>
+        data-options="width:200, height:29, panelHeight:'300', editable:false,
+            valueField: 'studentid',
+            textField: 'myfield',
+            mode: 'remote',
+            url: '/graph/getStudents',
+            loadFilter: function(data){
+                if ($.isArray(data)){ data = {total:data.length,rows:data}; }
+                $.map(data.rows, function(row){ row.myfield = row.sno+'_'+row.name; });
+                var opts = $(this).combobox('options');
+                var emptyRow = {};
+                emptyRow[opts.valueField] = '全部';
+                emptyRow[opts.textField] = '全部';
+                data.rows.unshift(emptyRow);
+                return data.rows;
+            },
+            onLoadSuccess: function(items){
+            $(this).combobox('select', '全部');
+            }">
 </select>
 
 <label for="organizationid">选择班级</label>
