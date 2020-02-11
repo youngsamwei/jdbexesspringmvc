@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -52,34 +51,14 @@ public class Neo4jServiceImpl implements INeo4jService {
     }
 
     @Override
-    public List<Student>  getStudents() {
+    public List<Student> getStudents() {
         return studentRepository.selectAll();
-//        List<Student> ls = new ArrayList<Student>();
-//        Iterator<Student> it = studentRepository.findAll().iterator();
-//        while (it.hasNext()) {
-//            Student s = it.next();
-//
-//            Iterator<Assignment> ia = s.getAssignments().iterator();
-//            while (ia.hasNext()) {
-//                if (ia.next().getExperiments() != null) {
-//                    Iterator<Experiment> ie = ia.next().getExperiments().iterator();
-//                    while (ie.hasNext()) {
-//                        ie.next().setAssignments(new HashSet<Assignment>());
-//                    }
-//                }
-//            }
-//            ls.add(s);
-//        }
-//        return ls;
     }
 
     @Override
-    public  List<Experiment> getExperiments() {
-        List<Experiment> ls = new ArrayList<Experiment>();
-        Iterator<Experiment> it = experimentRepository.findAll().iterator();
-        while (it.hasNext()) {
-            ls.add(it.next());
-        }
+    public List<Experiment> getExperiments() {
+        List<Experiment> ls = new ArrayList<>();
+        experimentRepository.findAll().forEach(ls::add);
         return ls;
     }
 

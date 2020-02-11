@@ -1,5 +1,6 @@
 package cn.sdkd.ccse.jdbexes.controller;
 
+import cn.sdkd.ccse.jdbexes.service.IExperimentService;
 import cn.sdkd.ccse.jdbexes.service.INeo4jService;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.service.IOrganizationService;
@@ -23,6 +24,8 @@ public class GraphBrowserController extends BaseController {
     private IOrganizationService organizationService;
     @Autowired
     private IUserService userService;
+    @Autowired
+    private IExperimentService experimentService;
 
     @RequestMapping("/browser")
     public String manager(Model model) {
@@ -32,13 +35,13 @@ public class GraphBrowserController extends BaseController {
     @RequestMapping(value = "/getExperiments")
     @ResponseBody
     public Object getExperiments() {
-        return neo4jService.getExperiments();
+        return experimentService.selectAll();
     }
 
     @RequestMapping(value = "/getStudents")
     @ResponseBody
     public Object getStudents() {
-        return neo4jService.getStudents();
+        return userService.selectAllStudent();
     }
 
     @RequestMapping(value = "/getOrganizations")
@@ -67,7 +70,7 @@ public class GraphBrowserController extends BaseController {
 
     @RequestMapping(value = "/getSimilaritiesBySimValueExperimentidStudentid")
     @ResponseBody
-    public Object findBySimValueExperimentidStudentid(@Param("simValue") Float simValue, @Param("expid") Long expid, @Param("stuid")Long stuid) {
+    public Object findBySimValueExperimentidStudentid(@Param("simValue") Float simValue, @Param("expid") Long expid, @Param("stuid") Long stuid) {
         return neo4jService.findSimilaritiesBySimValueExperimentidStudentid(simValue, expid, stuid);
     }
 

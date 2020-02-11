@@ -28,8 +28,8 @@
 <label for="expid">选择实验</label>
 <select id="expid" name="expid" class="easyui-combobox"
         data-options="width:200, height:29, panelHeight:'auto', editable:false,
-        valueField: 'experimentid',
-        textField: 'name',
+        valueField: 'expno',
+        textField: 'expname',
         width:200, height:29, panelHeight:'auto', editable:false,
         mode: 'remote',
         url: '/graph/getExperiments',
@@ -68,13 +68,13 @@
 <label for="stuid">选择学生</label>
 <select id="stuid" name="stuid" class="easyui-combobox"
         data-options="width:200, height:29, panelHeight:'300', editable:false,
-            valueField: 'studentid',
+            valueField: 'id',
             textField: 'myfield',
             mode: 'remote',
             url: '/graph/getStudents',
             loadFilter: function(data){
                 if ($.isArray(data)){ data = {total:data.length,rows:data}; }
-                $.map(data.rows, function(row){ row.myfield = row.sno+'_'+row.name; });
+                $.map(data.rows, function(row){ row.myfield = row.loginName+'_'+row.name; });
                 var opts = $(this).combobox('options');
                 var emptyRow = {};
                 emptyRow[opts.valueField] = '全部';
