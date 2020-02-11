@@ -5,6 +5,40 @@
 <script type="text/javascript" src="${staticPath }/static/neo4j_browser/layer.js" charset="utf-8"></script>
 <link rel="stylesheet" type="text/css" href="${staticPath }/static/style/css/vis-network.min.css"/>
 
+<script>
+    let studentCombobox = $('#stuid');
+
+    function comboboxLoadFilter(data) {
+        const opts = $(this).combobox('options');
+        const emptyRow = {};
+        emptyRow[opts.valueField] = '全部';
+        emptyRow[opts.textField] = '全部';
+        data.unshift(emptyRow);
+        return data;
+    }
+    function comboboxOnLoadSuccess() {
+        $(this).combobox('select', '全部');
+    }
+    function studentComboboxLoadFilter(data) {
+        if ($.isArray(data)){ data = {total:data.length,rows:data}; }
+        $.map(data.rows, function(row){ row.sno_sname = row.loginName+'_'+row.name; });
+        const opts = $(this).combobox('options');
+        const emptyRow = {};
+        emptyRow[opts.valueField] = '全部';
+        emptyRow[opts.textField] = '全部';
+        data.rows.unshift(emptyRow);
+        return data.rows;
+    }
+    function refreshStudentComboboxByOrganizationRecord(rec) {
+        if (rec.id === '') return;
+        if (rec.id === '全部') {
+            studentCombobox.combobox('reload', '/graph/getStudents');
+            return;
+        }
+        studentCombobox.combobox('reload', '/graph/getStudentIdByOrganizationId?organization_id=' + rec.id);
+    }
+</script>
+
 <style type="text/css">
     .network {
         width: 99%;
@@ -13,10 +47,6 @@
         background-color: #fff;
     }
 </style>
-
-<%--显示节点--%>
-<%--<input type="checkbox" name="checkbox" checked value="Person"/>Person--%>
-<%--<input type="checkbox" name="checkbox" checked value="Movie"/>Movie--%>
 
 <a onclick="findSimilaritiesBySimValue();" href="javascript:void(0);" class="easyui-linkbutton"
    data-options="plain:true,iconCls:'fi-page-search icon-green'">查询</a>
@@ -28,77 +58,33 @@
 <label for="expid">选择实验</label>
 <select id="expid" name="expid" class="easyui-combobox"
         data-options="width:200, height:29, panelHeight:'auto', editable:false,
-        valueField: 'expno',
-        textField: 'expname',
-        width:200, height:29, panelHeight:'auto', editable:false,
-        mode: 'remote',
-        url: '/graph/getExperiments',
-        loadFilter: function(data){
-            var opts = $(this).combobox('options');
-            var emptyRow = {};
-            emptyRow[opts.valueField] = '全部';
-            emptyRow[opts.textField] = '全部';
-            data.unshift(emptyRow);
-            return data;
-        },
-        onLoadSuccess: function(items){
-            $(this).combobox('select', '全部');
-        }">
+        url: '/graph/getExperiments', valueField: 'expno', textField: 'expname',
+        loadFilter: comboboxLoadFilter, onLoadSuccess: comboboxOnLoadSuccess">
 </select>
 
 <label for="organizationid">选择班级</label>
 <select id="organizationid" name="organizationid" class="easyui-combobox"
         data-options="width:200, height:29, panelHeight:'auto', editable:false,
-        valueField: 'id',
-        textField: 'name',
-        url: '/graph/getOrganizations',
-        loadFilter: function(data){
-            var opts = $(this).combobox('options');
-            var emptyRow = {};
-            emptyRow[opts.valueField] = '全部';
-            emptyRow[opts.textField] = '全部';
-            data.unshift(emptyRow);
-            return data;
-        },
-        onLoadSuccess: function(items){
-            $(this).combobox('select', '全部');
-        }">
+        url: '/graph/getOrganizations', valueField: 'id', textField: 'name',
+        loadFilter: comboboxLoadFilter, onLoadSuccess: comboboxOnLoadSuccess,
+        onSelect: refreshStudentComboboxByOrganizationRecord">
 </select>
 
 <label for="stuid">选择学生</label>
 <select id="stuid" name="stuid" class="easyui-combobox"
         data-options="width:200, height:29, panelHeight:'300', editable:false,
-            valueField: 'id',
-            textField: 'myfield',
-            mode: 'remote',
-            url: '/graph/getStudents',
-            loadFilter: function(data){
-                if ($.isArray(data)){ data = {total:data.length,rows:data}; }
-                $.map(data.rows, function(row){ row.myfield = row.loginName+'_'+row.name; });
-                var opts = $(this).combobox('options');
-                var emptyRow = {};
-                emptyRow[opts.valueField] = '全部';
-                emptyRow[opts.textField] = '全部';
-                data.rows.unshift(emptyRow);
-                return data.rows;
-            },
-            onLoadSuccess: function(items){
-            $(this).combobox('select', '全部');
-            }">
-</select>
-
-<label for="organizationid">选择班级</label>
-<select id="organizationid" id="organizationid" class="easyui-combobox"
-        data-options="width:200,height:29,editable:false,panelHeight:'auto'">
-    <option>全部</option>
-    <c:forEach items="${organizations}" var="organization">
-        <option value="${organization.id}">${organization.name}</option>
-    </c:forEach>
+            url: '/graph/getStudents', valueField: 'id', textField: 'sno_sname',
+            loadFilter: studentComboboxLoadFilter, onLoadSuccess: comboboxOnLoadSuccess">
 </select>
 
 <%-- 拓扑图容器 --%>
 <div id="network_id" class="network easyui-layout" data-options="fit:true,border:false"></div>
 <script>
+    const simCombobox = $('#simValue')
+    const expCombobox = $('#expid');
+    const stuCombobox = $('#stuid');
+    const orgCombobox = $('#organizationid');
+
     const nodes = new vis.DataSet([]);  // 创建节点对象
     const edges = new vis.DataSet([]);  // 创建连线对象
     const nodeExtendArr = [];           // 已扩展的节点
@@ -117,8 +103,8 @@
             async: true,
             data: {
                 simValue: 100,
-                expid: 6,
-                stuid: 1
+                expid: 20,
+                stuid: 5
             },
             success: function (ret) {
                 if (ret) {
@@ -140,9 +126,9 @@
         progressLoad();
 
         // 按相似度、学生、实验进行筛选
-        const simValue = $('#simValue').numberbox('getValue');
-        const exp_filter = $('#expid').combobox('getValue');
-        const stu_filter = $('#stuid').combobox('getValue');
+        const simValue = simCombobox.numberbox('getValue');
+        const exp_filter = expCombobox.combobox('getValue');
+        const stu_filter = stuCombobox.combobox('getValue');
         const data = {simValue: simValue};
         let url = '/graph/getSimilarities';
         if (exp_filter !== '全部' && stu_filter !== '全部') {
@@ -166,7 +152,7 @@
                     // console.info(result);
 
                     // 按班级进行筛选
-                    const organization_id = $('#organizationid').combobox('getValue');
+                    const organization_id = orgCombobox.combobox('getValue');
                     if (organization_id !== '全部') {
                         $.ajax({ // 查询当前班级的所有学生编号
                             url: '/graph/getStudentIdByOrganizationId',
@@ -453,18 +439,6 @@
         }
 
     }
-
-    $('input[type=checkbox][name=checkbox]').change(function (e) {
-        for (const i in network.body.data.nodes._data) {
-            if (network.body.data.nodes._data[i].label.indexOf("title") !== -1 && e.target.value === "Movie" && !e.currentTarget.checked) {
-                network.clustering.updateClusteredNode(i, {hidden: true});
-            } else if (network.body.data.nodes._data[i].label.indexOf("name") !== -1 && e.target.value === "Person" && !e.currentTarget.checked) {
-                network.clustering.updateClusteredNode(i, {hidden: true});
-            } else {
-                network.clustering.updateClusteredNode(i, {hidden: false});
-            }
-        }
-    });
 
     /**
      * 根据对象组数中的某个属性值进行过滤删除

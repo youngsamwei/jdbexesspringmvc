@@ -77,6 +77,6 @@ public class GraphBrowserController extends BaseController {
     @RequestMapping(value = "/getStudentIdByOrganizationId")
     @ResponseBody
     public Object findStudentByOrganizationId(@Param("organization_id") Long organization_id) {
-        return userService.selectStudentIdByOrganizationId(organization_id);
+        return userService.selectStudentByOrganizationId(organization_id);
     }
 }

@@ -122,8 +122,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
 
     @Override
-    public List<Long> selectStudentIdByOrganizationId(Long organization_id) {
-        return userMapper.selectStudentIdByOrganizationId(organization_id);
+    public List<User> selectStudentByOrganizationId(Long organization_id) {
+        return userMapper.selectStudentByOrganizationId(organization_id);
     }
 
 }

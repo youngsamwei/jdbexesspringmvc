@@ -22,7 +22,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     List<Map<String, Object>> selectUserPage(Pagination page, Map<String, Object> params);
 
-    @Select("SELECT u.id FROM User u WHERE u.organization_id = #{organization_id}")
-    List<Long> selectStudentIdByOrganizationId(@Param("organization_id") Long organization_id);
+    @Select("SELECT u.id, u.login_name as loginName, u.name FROM User u WHERE u.organization_id = #{organization_id} and user_type = 1")
+    List<User> selectStudentByOrganizationId(@Param("organization_id") Long organization_id);
 
 }

@@ -30,5 +30,5 @@ public interface IUserService extends IService<User> {
 
     void deleteUserById(Long id);
 
-    List<Long> selectStudentIdByOrganizationId(Long organization_id);
+    List<User> selectStudentByOrganizationId(Long organization_id);
 }
