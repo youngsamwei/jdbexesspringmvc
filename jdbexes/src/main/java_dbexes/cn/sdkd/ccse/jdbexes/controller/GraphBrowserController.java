@@ -1,6 +1,7 @@
 package cn.sdkd.ccse.jdbexes.controller;
 
 import cn.sdkd.ccse.jdbexes.service.IExperimentService;
+import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import cn.sdkd.ccse.jdbexes.service.INeo4jService;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.service.IOrganizationService;
@@ -26,6 +27,8 @@ public class GraphBrowserController extends BaseController {
     private IUserService userService;
     @Autowired
     private IExperimentService experimentService;
+    @Autowired
+    private IExperimentStuService experimentStuService;
 
     @RequestMapping("/browser")
     public String manager(Model model) {
@@ -47,7 +50,7 @@ public class GraphBrowserController extends BaseController {
     @RequestMapping(value = "/getOrganizations")
     @ResponseBody
     public Object getOrganizations() {
-        return organizationService.selectTreeGrid();
+        return experimentStuService.selectOrganizations();
     }
 
     @RequestMapping(value = "/getSimilarities")
