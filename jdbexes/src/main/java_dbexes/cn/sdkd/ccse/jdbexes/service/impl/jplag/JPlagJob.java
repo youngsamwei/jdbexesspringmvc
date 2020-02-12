@@ -16,12 +16,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD;
+import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD_SAME;
 
 /**
  * 相似度计算任务
@@ -60,24 +60,40 @@ class JPlagJob implements Runnable {
 
     @Override
     public void run() {
-        // 获取同一实验下的子提交
+        if (assignmentAlreadyExists()) {
+            return;
+        }
+
+        // 同一实验下的子提交
         ConcurrentHashMap<String, Submission> submissions = jPlagService.getSubmission(String.valueOf(this.expno));
 
-        // 创建提交
-        Assignment a1 = generateAssignment();
-
+        // 相似度检查结果
+        ConcurrentHashMap<SubmissionKey, Float> simRusultMap = new ConcurrentHashMap<>();
         for (Map.Entry<String, Submission> entry : submissions.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(this.submission.name)) {
                 continue;
             }
-
-            assert entry.getValue().name.equals(entry.getKey());
-
-            // 若不存在已有联系，则创建相似度联系
             SubmissionKey key = SubmissionKey.valueOf(entry.getKey());
             float sim = this.jPlagService.compareSubmission(this.submission, entry.getValue());
-            if (sim >= SIM_THRESHOLD) {
-                createEdgeIfNotExist(this.submissionKey, key, sim);
+            simRusultMap.put(key, sim);
+        }
+
+        // 如果与自己已有提交相似度接近 100%，则不创建新提交
+        Set<Long> userAssignments = assignmentRepository.findByStudentIdExpId(this.stuno, this.expno).stream().map(
+                Assignment::getAssignmentid
+        ).collect(Collectors.toCollection(HashSet::new));
+        for (Map.Entry<SubmissionKey, Float> result : simRusultMap.entrySet()) {
+            if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().experiment_stu_test_no)) {
+                logger.info("重复提交，不重新计算相似度");
+                return;
+            }
+        }
+
+        // 将提交保存于 neo4j，并创建联系
+        Assignment a1 = generateAssignment();
+        for (Map.Entry<SubmissionKey, Float> result : simRusultMap.entrySet()) {
+            if (result.getValue() >= SIM_THRESHOLD) {
+                createEdgeIfNotExist(this.submissionKey, result.getKey(), result.getValue());
             }
         }
 
@@ -135,16 +151,11 @@ class JPlagJob implements Runnable {
     }
 
     /**
-     * 创建一次提交，若提交已存在则使用先前提交
+     * 创建一次提交
      * @return assignment
      */
     private Assignment generateAssignment() throws NullPointerException {
-        Assignment a1 = this.assignmentRepository.findByAssignmentid(this.submissionKey.experiment_stu_test_no);
-        if (a1 != null) {
-            return a1;
-        }
-
-        a1 = new Assignment();
+        Assignment a1 = new Assignment();
         a1.setAssignmentid(this.submissionKey.experiment_stu_test_no);
         a1.setSubmitDate(new Date());
         a1 = this.assignmentRepository.save(a1);
@@ -154,6 +165,11 @@ class JPlagJob implements Runnable {
         this.assignmentRepository.createSubmitRelationship(s.getId(), a1.getId());
         this.assignmentRepository.createBelongtoRelationship(e.getId(), a1.getId());
         return a1;
+    }
+
+    private boolean assignmentAlreadyExists() {
+        Assignment a1 = this.assignmentRepository.findByAssignmentid(this.submissionKey.experiment_stu_test_no);
+        return a1 != null;
     }
 
 }
