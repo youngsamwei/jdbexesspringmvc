@@ -1,221 +1,247 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ include file="/commons/global.jsp" %>
 <script type="text/javascript">
-    var experiment_stu_experiment_stuDataGrid;
-    var experiment_stu_experimentTree;
-    var current_experiment_no = -1;
-    var current_organization_id = -1;
 
-    $(function() {
-        experiment_stu_experimentTree = $('#experiment_stu_experimentTree').tree({
-            url : '${path }/dbexp/tree',
-            parentField : 'pid',
-            lines : true,
-            onSelect : function(node) {
-                current_experiment_no = node.id;
-                experiment_stu_experiment_stuDataGrid.datagrid({
-                    url : '${path }/dbexperiment_stu/experimentStuByExpno',
-                    queryParams:{
-                            expno: node.id,
-                            organization_id : current_organization_id
-                        }
-                });
+    const experimentStuExperiment = function () {
+        let current_experiment_no = -1;
+        let current_organization_id = -1;
 
-            },
-            onLoadSuccess:function(node,data){
-               $("#experiment_stu_experimentTree li:eq(0)").find("div").addClass("tree-node-selected");   //设置第一个节点高亮
-               var n = $("#experiment_stu_experimentTree").tree("getSelected");
-               if(n!=null){
-                    $("#experiment_stu_experimentTree").tree("select",n.target);    //相当于默认点击了一下第一个节点，执行onSelect方法
-               }
-            }
-        });
+        const tree = initTree();
+        const datagrid = initDataGrid();
+        const organization_id_select = getOrganizationIdSelect();
 
-        experiment_stu_experiment_stuDataGrid = $('#experiment_stu_experiment_stuDataGrid').datagrid({
-            /*加载数据时指定 */
-            //url : '${path }/dbexperiment_stu/experimentStuByExpno',
-            striped : true,
-            rownumbers : true,
-            pagination : true,
-            singleSelect : false,
-            idField : 'expstuno',
-            sortName : 'login_name',
-            sortOrder : 'asc',
-            remoteSort: false,
-            pageSize : 20,
-            pageList : [ 10, 20, 30, 40, 50, 100, 200, 300, 400, 500 ],
-            frozenColumns : [ [  {
-                field: 'expstuno',
-                checkbox: true,
-            },{
-                width : '100',
-                title : '学号',
-                field : 'login_name',
-                sortable : true
-            } ,{
-                   width : '100',
-                   title : '姓名',
-                   field : 'name',
-                   sortable : true
-               } ,  {
-                  width:'100',
-                  title : '提交时间',
-                  field : 'submittime',
-                  sortable : true
-               },{
-                 width : '100',
-                 title : '测试描述',
-                 field : 'testdesc',
-                 sortable : true,
-                 formatter : function(value, row, index){
-                    var str=  "";
-                    if (row.teststatus >= 2){
-                        str = $.formatString("<a href='javascript:void(0)' onclick='open_test_log_experiment_stu_fun({0});' >{1}</a>", row.expstuno, value);
-                        return str;
-                    }else{
-                        return value;
-                    }
-                 }
-             } ,  {
-                  width : '200',
-                  title : '相似度描述',
-                  field : 'simdesc',
-                  sortable : true,
-                  // 定义根据相似度排序的方法
-                  sorter : function(a, b) {
-                      // 找到字符串中第一个数字作为排序依据
-                      // 格式：与(\d+)个同学的作业相似度超过xx%.
-                      const aa = a.match(/\d+/);
-                      const bb = b.match(/\d+/);
-                      if (!aa) return -1;
-                      if (!bb) return 1;
-                      const an = parseInt(aa.shift());
-                      const bn = parseInt(bb.shift());
-                      if (isNaN(an)) return -1;
-                      if (isNaN(bn)) return 1;
+        /* region tree init */
+        function initTree() {
+            return $('#experiment-stu-experiment-tree').tree({
+                url: '${path}/dbexp/tree',
+                parentField: 'pid',
+                lines: true,
+                onSelect: treeOnSelect,
+                onLoadSuccess: treeOnLoadSuccess
+            });
+        }
 
-                      return an > bn ? 1 : -1;
-                  },
-                  formatter : function(value, row, index){
-                          if (row.simstatus == 0){
-                              return "正常";
-                          }else{
-                              str = $.formatString(
-                                  "<a href='javascript:void(0)' onclick='open_simcheck_log_experiment_stu_fun({0});' >{1}</a>",
-                                  row.expstuno,
-                                  value);
-                              return str;
-                          }
-                  }
-              }, {
-                field : 'teststatus',
-                title : '操作',
-                width : 200,
-                formatter : function(value, row, index) {
-                    var str = '';
-                    if (value == 0){
-                        str = "正在测试..."
-                    } else if (value == -1){
-                        str = "未测试";
-                    }else{
-                        str = "测试完成";
-                    }
-                    return str;
-                }
-            } ] ],
-            toolbar : '#experiment_stuToolbar'
-        });
+        function treeOnSelect(node) {
+            current_experiment_no = node.id;
+            refreshDataGrid();
+        }
 
-        /*选择班级时触发的事件*/
-        $("#organizationid").combobox({
-            onSelect:function(record){
-                current_organization_id = record.value;
-                experiment_stu_experiment_stuDataGrid.datagrid({
-                    url : '${path }/dbexperiment_stu/experimentStuByExpno',
-                    queryParams:{
-                            expno: current_experiment_no,
-                            organization_id : record.value
-                        }
-                });
-            }
-		});
-    });
+        function treeOnLoadSuccess(node, data) {
+            tree.find("div").addClass("tree-node-selected");    // 高亮第一个节点
+            const n = tree.tree("getSelected");
+            if (n != null) tree.tree("select", n.target);
+        }
 
-    function test_experiment_stuFun() {
+        /* endregion */
 
-        var rows = experiment_stu_experiment_stuDataGrid.datagrid('getSelections');
+        /* region datagrid init */
+        function initDataGrid() {
+            return $('#experiment_stu_experiment_stuDataGrid').datagrid({
+                /*加载数据时指定 */
+                //url : '${path}/dbexperiment_stu/experimentStuByExpno',
+                striped: true,
+                rownumbers: true,
+                pagination: true,
+                singleSelect: false,
+                idField: 'expstuno',
+                sortName: 'login_name',
+                sortOrder: 'asc',
+                remoteSort: false,
+                pageSize: 20,
+                pageList: [10, 20, 30, 40, 50, 100, 200, 300, 400, 500],
+                frozenColumns: [[{
+                    field: 'expstuno',
+                    checkbox: true,
+                }, {
+                    width: '100',
+                    title: '学号',
+                    field: 'login_name',
+                    sortable: true
+                }, {
+                    width: '100',
+                    title: '姓名',
+                    field: 'name',
+                    sortable: true
+                }, {
+                    width: '100',
+                    title: '提交时间',
+                    field: 'submittime',
+                    sortable: true
+                }, {
+                    width: '100',
+                    title: '测试描述',
+                    field: 'testdesc',
+                    sortable: true,
+                    formatter: testdescRowFormatter
+                }, {
+                    width: '200',
+                    title: '相似度描述',
+                    field: 'simdesc',
+                    sortable: true,
+                    sorter: simdescRowSorter,
+                    formatter: simdescRowFormatter
+                }, {
+                    field: 'teststatus',
+                    title: '操作',
+                    width: 200,
+                    formatter: teststatusRowFormatter
+                }]],
+                toolbar: '#experiment_stuToolbar'
+            });
+        }
 
-        var expstunos = [];
-        if (rows && rows.length > 0) {
-            for ( var i = 0; i < rows.length; i++) {
-                expstunos.push(rows[i].expstuno);
+        function testdescRowFormatter(value, row, index) {
+            if (row.teststatus < 2) return value;
+            return $.formatString("<a href='javascript:void(0)' onclick='experimentStuExperiment.openTestLog({0})'>{1}</a>", row.expstuno, value);
+        }
+
+        /**
+         * 根据相似度排序的方法
+         */
+        function simdescRowSorter(a, b) {
+            // 找到字符串中第一个数字作为排序依据
+            // 格式：与(\d+)个同学的作业相似度超过xx%.
+            const aa = a.match(/\d+/);
+            const bb = b.match(/\d+/);
+            if (!aa) return -1;
+            if (!bb) return 1;
+            const an = parseInt(aa.shift());
+            const bn = parseInt(bb.shift());
+            if (isNaN(an)) return -1;
+            if (isNaN(bn)) return 1;
+
+            return an > bn ? 1 : -1;
+        }
+
+        function simdescRowFormatter(value, row, index) {
+            if (row.simstatus === 0) {
+                return "正常";
+            } else {
+                str = $.formatString(
+                    "<a href='javascript:void(0)' onclick='experimentStuExperiment.openSimCheckLog({0})' >{1}</a>",
+                    row.expstuno,
+                    value);
+                return str;
             }
         }
-        var checkBatchController = "${path }/dbexperiment_stu/checkBatch";
 
-        var form = new FormData();
-        form.append("expstunos", expstunos);
+        function teststatusRowFormatter(value, row, index) {
+            let str = '';
+            if (value === 0) {
+                str = "正在测试..."
+            } else if (value === -1) {
+                str = "未测试";
+            } else {
+                str = "测试完成";
+            }
+            return str;
+        }
 
-        // XMLHttpRequest 对象
-        var xhr = new XMLHttpRequest();
-        xhr.open("post", checkBatchController, false);
+        /* endregion */
 
-        xhr.send(form);
-    }
-
-    function open_test_log_experiment_stu_fun(expstuno){
-        parent.$.modalDialog({
-                    title : '查看测试日志',
-                    width : 900,
-                    height : 700,
-                    href : '${path }/dbexperiment_stu/openTestLogPage?expstuno=' + expstuno,
-                    buttons : [ {
-                        text : '关闭',
-                        handler : function() {
-                            parent.$.modalDialog.handler.dialog('close');
-                        }
-                    } ]
-                });
-    }
-
-    function open_simcheck_log_experiment_stu_fun(expstuno){
-        parent.$.modalDialog({
-            title : '相似的提交',
-            width : 900,
-            height : 700,
-            href : '${path }/dbexperiment_stu/openSimCheckResultPage?expstuno=' + expstuno,
-            buttons : [ {
-                text : '关闭',
-                handler : function() {
-                    parent.$.modalDialog.handler.dialog('close');
+        /* region select init */
+        function getOrganizationIdSelect() {
+            return $("#organizationid").combobox({
+                onSelect: function (record) {
+                    current_organization_id = record.value;
+                    refreshDataGrid()
                 }
-            } ]
-        });
-    }
+            });
+        }
 
+        /* endregion */
 
+        function refreshDataGrid() {
+            datagrid.datagrid({
+                url: '${path}/dbexperiment_stu/experimentStuByExpno',
+                queryParams: {expno: current_experiment_no, organization_id: current_organization_id}
+            });
+        }
 
+        function testRecord() {
+            const rows = datagrid.datagrid('getSelections');
+
+            const expstunos = [];
+            if (rows && rows.length > 0) {
+                for (let i = 0; i < rows.length; i++) {
+                    expstunos.push(rows[i].expstuno);
+                }
+            }
+
+            const form = new FormData();
+            form.append("expstunos", expstunos);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("post", "${path}/dbexperiment_stu/checkBatch", false);
+            xhr.send(form);
+        }
+
+        function openTestLog(expstuno) {
+            parent.$.modalDialog({
+                title: '查看测试日志',
+                width: 900,
+                height: 700,
+                href: '${path}/dbexperiment_stu/openTestLogPage?expstuno=' + expstuno,
+                buttons: [{
+                    text: '关闭',
+                    handler: function () {
+                        parent.$.modalDialog.handler.dialog('close');
+                    }
+                }]
+            });
+        }
+
+        function openSimCheckLog(expstuno) {
+            parent.$.modalDialog({
+                title: '相似的提交',
+                width: 900,
+                height: 700,
+                href: '${path }/dbexperiment_stu/openSimCheckResultPage?expstuno=' + expstuno,
+                buttons: [{
+                    text: '关闭',
+                    handler: function () {
+                        parent.$.modalDialog.handler.dialog('close');
+                    }
+                }]
+            });
+        }
+
+        return {
+            datagrid: datagrid,
+            tree: tree,
+            organization_id_select: organization_id_select,
+            testRecord: testRecord,
+            openTestLog: openTestLog,
+            openSimCheckLog: openSimCheckLog
+        }
+    }();
+
+    window.experimentStuExperiment = experimentStuExperiment;
 </script>
+
 <div class="easyui-layout" data-options="fit:true,border:false">
-    <div data-options="region:'west',border:true,split:false,title:'课程设计实验列表'"  style="width:300px;overflow: hidden; ">
-        <ul id="experiment_stu_experimentTree" style="width:160px;margin: 10px 10px 10px 10px"></ul>
+    <div data-options="region:'west',border:true,split:false,title:'课程设计实验列表'" style="width:300px;overflow: hidden; ">
+        <ul id="experiment-stu-experiment-tree" style="width:160px;margin: 10px 10px 10px 10px"></ul>
     </div>
-    <div data-options="region:'center',border:true,title:'选此实验的学生'" >
+    <div data-options="region:'center',border:true,title:'选此实验的学生'">
         <table id="experiment_stu_experiment_stuDataGrid" data-options="fit:true,border:false"></table>
     </div>
 
 </div>
 
 <div id="experiment_stuToolbar" style="display: none;">
-选择班级<select id="organizationid" name="organizationid"  onchange="organization_change()" class="easyui-combobox" data-options="width:200,height:29,editable:false,panelHeight:'auto'">
-    <option value='-1'>全部</option>
-    <c:forEach items="${organizations}" var="organization" >
-        <option value="${organization.id}">${organization.name}</option>
-    </c:forEach>
-</select>
+    <label for="organizationid">选择班级</label>
+    <select id="organizationid" name="organizationid" class="easyui-combobox"
+            data-options="width:200,height:29,editable:false,panelHeight:'auto'">
+        <option value='-1'>全部</option>
+        <c:forEach items="${organizations}" var="organization">
+            <option value="${organization.id}">${organization.name}</option>
+        </c:forEach>
+    </select>
 
     <shiro:hasPermission name="/dbexpfiles/add">
-        <a onclick="test_experiment_stuFun();" href="javascript:void(0);" class="easyui-linkbutton" data-options="plain:true,iconCls:'fi-plus icon-green'">测试选中作业</a>
+        <a onclick="experimentStuExperiment.testRecord()" href="javascript:void(0)" class="easyui-linkbutton"
+           data-options="plain:true,iconCls:'fi-plus icon-green'">测试选中作业</a>
     </shiro:hasPermission>
 
 </div>
