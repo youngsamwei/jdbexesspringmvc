@@ -103,3 +103,4 @@ buildNumber.properties
 # Dev spec Setting
 src/main/conf/dev/config/application.properties
 src/main/conf/dev/config/checkmission.properties
+.idea/dataSources.xml
