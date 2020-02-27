@@ -344,16 +344,13 @@
                         <configuration>
                             <resources>
                                 <rescource>
-                                    <directory>src/resources</directory>
-                                    <targetPath>my-resources</targetPath>
+                                    <directory>src/main/resources</directory>
                                 </rescource>
                                 <rescource>
-                                    <directory>src/resources_dbexes</directory>
-                                    <targetPath>resources_dbexes</targetPath>
+                                    <directory>src/main/resources_dbexes</directory>
                                 </rescource>
                                 <rescource>
-                                    <directory>src/resources_sqles</directory>
-                                    <targetPath>resources_sqles</targetPath>
+                                    <directory>src/main/resources_sqles</directory>
                                 </rescource>
                             </resources>
                         </configuration>
