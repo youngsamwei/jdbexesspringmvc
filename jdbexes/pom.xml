@@ -314,6 +314,52 @@
                     <server>tomcat7</server>
                 </configuration>
             </plugin>
+
+            <!-- for compiling with multiple src directories  -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/java</source>
+                                <source>src/main/java_dbexes</source>
+                                <source>src/main/java_sqles</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-resource</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <rescource>
+                                    <directory>src/resources</directory>
+                                    <targetPath>my-resources</targetPath>
+                                </rescource>
+                                <rescource>
+                                    <directory>src/resources_dbexes</directory>
+                                    <targetPath>resources_dbexes</targetPath>
+                                </rescource>
+                                <rescource>
+                                    <directory>src/resources_sqles</directory>
+                                    <targetPath>resources_sqles</targetPath>
+                                </rescource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
