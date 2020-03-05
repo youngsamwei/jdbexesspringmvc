@@ -95,6 +95,7 @@ public class ExperimentStuController extends BaseController {
     @RequestMapping("/openTestLogPage")
     public Object openTestLogPage(Model model, @RequestParam("expstuno") Long expstuno) {
         String logText = "";
+        /* TODO
         ExperimentStu es = experimentStuService.selectById(expstuno);
         UserVo u = userService.selectVoById(es.getStuno());
         String logFile = checkMissionService.getLogRootDir() + "/" + u.getLoginName() + "_" + u.getName() + "/" + es.getExpno();
@@ -133,6 +134,7 @@ public class ExperimentStuController extends BaseController {
                 }
             }
         }
+         */
         model.addAttribute("logText", logText);
         return "jdbexes/experiment/experiment_stuOpenTestLog";
     }

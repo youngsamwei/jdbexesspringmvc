@@ -1,56 +1,51 @@
 package cn.sdkd.ccse.jdbexes.checkmission;
 
-import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
-import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.ExecCreateCmdResponse;
+import com.github.dockerjava.api.command.InspectExecResponse;
+import com.github.dockerjava.core.DockerClientBuilder;
+import com.github.dockerjava.core.command.ExecStartResultCallback;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
-/** 测试实验作业是否通过测试用例。
- * Created by sam on 2019/1/4.
+/**
+ * 测试实验作业是否通过测试用例
  */
 public class CheckJob implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(CheckJob.class);
-    /*从0开始计数*/
-    private int step;
 
-    /* 学生编号*/
-    private Long stuno;
-    /*实验编号*/
-    private Long expno;
+    DockerClient dockerClient;
+    String image_name;
+
+    private Long stuno; // 学生编号
+    private Long expno; // 实验编号
 
     private String sno;
     private String sname;
 
-    private String testTarget;
-
-    /*学生实验提交文件根目录*/
-    private String srcDir;
-    /*学生实验项目根目录*/
-    private String projectDir;
-
-    private String originalProjectRootDir;
-
-    private String logDir;
-
     private IExperimentFilesStuService experimentFilesStuService;
     private IExperimentStuService experimentStuService;
-    private ICheckMissionService checkMissionService;
 
-    private List<ExperimentFilesStuVO> experimentFilesStuVOList;
-    private boolean needRefresh;
-    private boolean simPassed;
+    public CheckJob(String dockerHost, String image_name, Long stuno, Long expno, String sno, String sname,
+                    IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService) {
 
-    public CheckJob(Long stuno, Long expno, String sno, String sname,
-                    IExperimentFilesStuService experimentFilesStuService,
-                    IExperimentStuService experimentStuService,
-                    ICheckMissionService checkMissionService,
-                    String srcDir, String originalProjectRootDir, String logDir) {
+        this.dockerClient = DockerClientBuilder.getInstance(dockerHost).build();
+        this.image_name = image_name;
+
         this.stuno = stuno;
         this.expno = expno;
         this.sno = sno;
@@ -58,244 +53,167 @@ public class CheckJob implements Runnable {
 
         this.experimentFilesStuService = experimentFilesStuService;
         this.experimentStuService = experimentStuService;
-        this.checkMissionService = checkMissionService;
-
-        this.srcDir = srcDir;
-        this.originalProjectRootDir = originalProjectRootDir;
-        this.logDir = logDir;
 
     }
 
     @Override
     public void run() {
-        /*获得目录*/
-        if (checkMissionService.getProjectDirQueue().size() > 0) {
-            this.needRefresh = false;
-            this.projectDir = checkMissionService.getProjectDirQueue().poll();
-        } else {
-            this.needRefresh = true;
-            this.projectDir = checkMissionService.newProjectDir();
-        }
+        logger.info("Running test for (" + sno + ", " + sname + ").");
 
-        this.logger.info(this.sno + "_" + this.sname + " get: " + this.projectDir);
-        init();
+        List<ExperimentFilesStuVO> experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
+        String testTarget = experimentFilesStuVOList.get(0).getTesttarget();
 
-        step1GenerateFiles();
-        step++;
-        step2SimilarityParser();
-        step++;
-        step3SimilarityCheck();
-        step++;
-        step4TestCases();
+        // Create container
+        CreateContainerResponse container = dockerClient
+                .createContainerCmd(image_name)
+                .withStdinOpen(true)
+                .exec();
 
-        recovery();
+        // Start container
+        dockerClient.startContainerCmd(container.getId()).exec();
 
-         /*释放目录*/
-        checkMissionService.addProjectDir(this.projectDir);
-        this.logger.info(this.sno + "_" + this.sname + " set: " + this.projectDir);
-    }
-
-    private void init() {
-
-        experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
-        this.testTarget = experimentFilesStuVOList.get(0).getTesttarget();
-
-        File fSrcDir = new File(this.srcDir);
-        if (!fSrcDir.exists()) {
-            fSrcDir.mkdirs();
-        }
-
-        File fProjectDir = new File(this.projectDir);
-        if (!fProjectDir.exists()) {
-            fProjectDir.mkdirs();
-        }
-
-        File fLogDir = new File(this.logDir);
-        if (!fLogDir.exists()) {
-            fLogDir.mkdirs();
-        } else {
-            /*若log存在则删除log下所有文件*/
-            FileUtils.delFiles(this.logDir);
-        }
-    }
-
-    /*恢复项目文件的初始状态*/
-    public void recovery() {
-        /*为防止多个实验测试时产生影响，因此每次都重新复制空的实验文件。*/
+        // Copy file into container
         try {
             for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
-                FileUtils.copyFile(this.originalProjectRootDir + "/" + efsv.getDstfilename(), this.projectDir + "/" + efsv.getDstfilename());
+                File file = generateTempFile(efsv.getSrcfilename(), efsv.getFile_content());
+                String srcDir = file.getAbsolutePath();
+                String distDir = FilenameUtils.separatorsToUnix(
+                        FilenameUtils.concat(
+                                "/workspace",
+                                FilenameUtils.getPath(efsv.getDstfilename()))
+                );
+                copyFile(container, srcDir, distDir);
             }
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            logger.error(e.toString());
         }
+
+        // Build test
+        int code_build = buildTest(container, testTarget);
+        if (code_build != 0) {
+            experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "编译时错误(" + code_build + ")");
+            return;
+        }
+
+        // Run test
+        int code_test = runTest(container, testTarget);
+        switch (code_test) {
+            case 0:
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 5, "通过");
+                break;
+            case 1:
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "结果错误");
+                break;
+            default:
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "运行时错误(" + code_test + ")");
+        }
+
+        // TODO: 错误信息存入数据库
+
+        // Stop and remove container
+        dockerClient.killContainerCmd(container.getId()).exec();
+        dockerClient.removeContainerCmd(container.getId()).exec();
     }
 
-    /*从数据库中读取学生提交的代码文件，产生到srcRootDir中指定实验的文件夹中
-    * 如果存在则覆盖，可能其他进程会也在访问该文件
-    * */
-    public void step1GenerateFiles() {
 
-        logger.debug("获得" + experimentFilesStuVOList.size() + "文件");
-        for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
-            String fname = this.srcDir + efsv.getSrcfilename();
-            OutputStreamWriter op = null;
-            try {
-                op = new OutputStreamWriter(new FileOutputStream(fname), "utf-8");
-                op.append(efsv.getFile_content());
-                op.flush();
-                op.close();
-            } catch (UnsupportedEncodingException e) {
-                logger.debug(e.getMessage());
-            } catch (FileNotFoundException e) {
-                logger.debug(e.getMessage());
-            } catch (IOException e) {
-                logger.debug(e.getMessage());
-            }
+    /**
+     * 将数据写入临时文件
+     *
+     * @param filename 文件名
+     * @param contect  文件内容
+     * @return 临时文件
+     */
+    private File generateTempFile(String filename, String contect) throws IOException {
+        Path dir = Files.createTempDirectory("dongmendb");
+        String fullpath = FilenameUtils.concat(dir.toString(), filename);
+        File file = new File(fullpath);
 
+        try (OutputStreamWriter op = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            op.append(contect);
+            op.flush();
         }
+
+        return file;
     }
 
-    /*读取需要比较的代码文件，先解析
-    * 可能会与文件产生冲突
-    * */
-    public void step2SimilarityParser() {
-
+    /**
+     * 将文件拷贝到容器中指定位置
+     *
+     * @param container 容器
+     * @param from      源文件路径
+     * @param to        目标文件路径
+     */
+    private void copyFile(CreateContainerResponse container, String from, String to) {
+        // Copy temp file into container
+        dockerClient.copyArchiveToContainerCmd(container.getId())
+                .withHostResource(from)
+                .withRemotePath(to)
+                .withNoOverwriteDirNonDir(false)
+                .exec();
     }
 
-    /*解析完成后计算相似度*/
-    public void step3SimilarityCheck() {
+    /**
+     * 构建测试可执行文件
+     *
+     * @param container 容器
+     * @param target    cmake 编译目标
+     * @return 返回代码，-1 表示命令执行出错
+     */
+    private int buildTest(CreateContainerResponse container, String target) {
+        // Build test
+        String[] buildCmd = new String[]{
+                "bash",
+                "-c",
+                "cd /workspace/ && cmake --build /workspace/cmake-build-debug --target " + target
+        };
 
+        ExecCreateCmdResponse buildExec = dockerClient.execCreateCmd(
+                container.getId())
+                .withAttachStdout(true)
+                .withAttachStderr(true)
+                .withCmd(buildCmd)
+                .exec();
+        try {
+            dockerClient.execStartCmd(buildExec.getId()).withDetach(false)
+                    .exec(new ExecStartResultCallback(System.out, System.err)).awaitCompletion();
+        } catch (InterruptedException e) {
+            logger.warn(e.toString());
+            return -1;
+        }
+
+        InspectExecResponse response = dockerClient.inspectExecCmd(buildExec.getId()).exec();
+        Integer code = response.getExitCode();
+        logger.debug("return code: " + code.toString());
+
+        return code;
     }
 
-    /*执行功能测试*/
-    public void step4TestCases() {
-
-        boolean passed = true;
-        if (this.needRefresh) {
-            /*第一步：复制项目文件到学生个人文件夹*/
-            try {
-                FileUtils.copyDir(originalProjectRootDir, projectDir);
-                passed = true;
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "复制文件发生错误");
-                passed = false;
-            }
+    /**
+     * 执行测试
+     *
+     * @param container 容器
+     * @param target    cmake 编译目标
+     * @return 返回代码，-1 表示命令执行出错
+     */
+    private int runTest(CreateContainerResponse container, String target) {
+        ExecCreateCmdResponse testExec = dockerClient.execCreateCmd(
+                container.getId())
+                .withAttachStdout(true)
+                .withAttachStderr(true)
+                .withCmd("/workspace/bin/exp_01_03_select_test")
+                .exec();
+        try {
+            dockerClient.execStartCmd(testExec.getId()).withDetach(false)
+                    .exec(new ExecStartResultCallback(System.out, System.err)).awaitCompletion();
+        } catch (InterruptedException e) {
+            logger.warn(e.toString());
+            return -1;
         }
 
-        /*清理bin文件夹下所有文件和文件夹*/
-        FileUtils.delFiles(this.projectDir + "/bin/");
+        InspectExecResponse response = dockerClient.inspectExecCmd(testExec.getId()).exec();
+        Integer code = response.getExitCode();
+        logger.debug("return code: " + code.toString());
 
-        if (passed) {
-            passed = false;
-            /*第二步：复制作业文件到学生个人文件夹*/
-            experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在复制文件..");
-            for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
-                try {
-                    File srcf = new File(this.srcDir + "/" + efsv.getSrcfilename());
-                    if (!srcf.exists()) {
-                        experimentStuService.updateStatusDesc(this.stuno, this.expno, 1, "缺少文件:" + efsv.getSrcfilename());
-                        passed = false;
-                        break;
-                    } else {
-                        FileUtils.copyFile(this.srcDir + "/" + efsv.getSrcfilename(), this.projectDir + "/" + efsv.getDstfilename());
-                        passed = true;
-                    }
-                } catch (IOException e) {
-                    logger.error(e.getMessage());
-                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 1, "复制文件时出错");
-                    passed = false;
-                    break;
-                }
-            }
-        }
-        if (this.needRefresh) {
-            if (passed) {
-                passed = false;
-                try {
-                /*第三步：refresh*/
-                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在刷新项目..");
-                    FileUtils.execCmdOutput(this.projectDir + "/cmd/refresh.bat", this.logDir + "refresh.log", "utf8");
-                    passed = true;
-                } catch (IOException e) {
-                    logger.error(e.getMessage());
-                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "刷新项目时出错");
-                }
-            }
-            if (passed) {
-                passed = false;
-                try {
-            /*第四步：clean*/
-                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在清理项目..");
-                    FileUtils.execCmdOutput(this.projectDir + "/cmd/clean.bat", logger, "utf8");
-                    passed = true;
-                } catch (IOException e) {
-                    logger.error(e.getMessage());
-                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "清理项目时出错");
-                }
-            }
-        } else {
-            /*如果重复利用现有文件夹，则需要清理obj文件*/
-            for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
-                File obj1 = new File(this.projectDir + efsv.getObjfilename());
-                if (obj1.exists()) {
-                    obj1.delete();
-                }
-            }
-        }
-
-        if (passed) {
-            passed = false;
-            try {
-            /*第五步：build*/
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在编译项目..");
-                FileUtils.execCmdOutput(this.projectDir + "/cmd/build.bat " + this.testTarget, this.logDir + "/build.log", "utf8");
-                File t = new File(this.projectDir + "/bin/" + this.testTarget + ".exe");
-                if (!t.exists()) {
-                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "编译项目时出错");
-                } else {
-                    passed = true;
-                }
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 2, "编译项目时出错");
-            }
-        }
-        if (passed) {
-            passed = false;
-            try {
-            /*第六步：run_test*/
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 0, "正在执行测试..");
-                int verify = FileUtils.execCmdOutputVerify(this.projectDir + "/cmd/run_test.bat " + this.testTarget,
-                        "[  PASSED  ]",
-                        "FAILED TEST", this.logDir + "/testcases.log", "utf8");
-                if (verify == 0) {
-                    passed = true;
-                } else if (verify == -1) {
-                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "执行测试未通过");
-                } else {
-                    experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "执行测试时出错");
-                }
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-                experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "执行测试时出错");
-            }
-        }
-
-        if (passed) {
-            experimentStuService.updateStatusDesc(this.stuno, this.expno, 5, "通过");
-        }
-
-        /*删除bin文件夹下所有文件和文件夹*/
-        FileUtils.delFiles(this.projectDir + "/bin/");
-//        try {
-//            /*第七步：删除临时文件夹*/
-//            FileUtils.execCmdOutput(this.projectDir + "/cmd/deldir.bat " + this.projectDir, logger, "utf8");
-//        } catch (IOException e) {
-//            logger.error("最后删除项目文件:" + e.getMessage());
-//        }
-
+        return code;
     }
-
 }
