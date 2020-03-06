@@ -13,10 +13,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -173,9 +170,10 @@ public class CheckJob implements Runnable {
                 .withAttachStderr(true)
                 .withCmd(buildCmd)
                 .exec();
+        OutputStream out = new ByteArrayOutputStream();
         try {
             dockerClient.execStartCmd(buildExec.getId()).withDetach(false)
-                    .exec(new ExecStartResultCallback(System.out, System.err)).awaitCompletion();
+                    .exec(new ExecStartResultCallback(out, out)).awaitCompletion();
         } catch (InterruptedException e) {
             logger.warn(e.toString());
             return -1;
@@ -183,7 +181,10 @@ public class CheckJob implements Runnable {
 
         InspectExecResponse response = dockerClient.inspectExecCmd(buildExec.getId()).exec();
         Integer code = response.getExitCode();
-        logger.debug("return code: " + code.toString());
+        if (code != 0) {
+            String log = out.toString() + "\n\nreturn code: " + code.toString();
+            experimentStuService.updateCheckLog(stuno, expno, log);
+        }
 
         return code;
     }
@@ -202,9 +203,10 @@ public class CheckJob implements Runnable {
                 .withAttachStderr(true)
                 .withCmd("/workspace/bin/exp_01_03_select_test")
                 .exec();
+        OutputStream out = new ByteArrayOutputStream();
         try {
             dockerClient.execStartCmd(testExec.getId()).withDetach(false)
-                    .exec(new ExecStartResultCallback(System.out, System.err)).awaitCompletion();
+                    .exec(new ExecStartResultCallback(out, out)).awaitCompletion();
         } catch (InterruptedException e) {
             logger.warn(e.toString());
             return -1;
@@ -212,7 +214,10 @@ public class CheckJob implements Runnable {
 
         InspectExecResponse response = dockerClient.inspectExecCmd(testExec.getId()).exec();
         Integer code = response.getExitCode();
-        logger.debug("return code: " + code.toString());
+        if (code != 0) {
+            String log = out.toString() + "\n\nreturn code: " + code.toString();
+            experimentStuService.updateCheckLog(stuno, expno, log);
+        }
 
         return code;
     }
