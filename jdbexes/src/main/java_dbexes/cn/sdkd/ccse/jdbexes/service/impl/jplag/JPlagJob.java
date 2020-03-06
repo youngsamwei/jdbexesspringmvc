@@ -112,7 +112,7 @@ class JPlagJob implements Runnable {
         if (lss.size() > 0) {
             experimentStuService.updateSimStatus(this.stuno, this.expno, 3, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
         } else {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, 0, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
+            experimentStuService.updateSimStatus(this.stuno, this.expno, 0, Configuration.getSimDescNormal());
         }
     }
 

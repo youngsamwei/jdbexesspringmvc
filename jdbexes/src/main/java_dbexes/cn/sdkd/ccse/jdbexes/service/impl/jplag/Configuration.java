@@ -8,4 +8,8 @@ public abstract class Configuration {
     public static String getSimDesc(int size, float simValue) {
         return "与" + size + "个同学的作业相似度超过" + simValue + "%.";
     }
+
+    public static String getSimDescNormal() {
+        return "正常";
+    }
 }

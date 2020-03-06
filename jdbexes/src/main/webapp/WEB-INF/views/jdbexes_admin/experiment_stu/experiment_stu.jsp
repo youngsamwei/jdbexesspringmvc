@@ -91,7 +91,7 @@
         }
 
         function testdescRowFormatter(value, row, index) {
-            if (row.teststatus < 2) return value;
+            if (row.teststatus >= 5) return value;
             return $.formatString("<a href='javascript:void(0)' onclick='experimentStuExperiment.openTestLog({0})'>{1}</a>", row.expstuno, value);
         }
 
@@ -114,15 +114,12 @@
         }
 
         function simdescRowFormatter(value, row, index) {
-            if (row.simstatus === 0) {
-                return "正常";
-            } else {
-                str = $.formatString(
-                    "<a href='javascript:void(0)' onclick='experimentStuExperiment.openSimCheckLog({0})' >{1}</a>",
-                    row.expstuno,
-                    value);
-                return str;
-            }
+            if (row.simstatus !== "3") return value;
+            str = $.formatString(
+                "<a href='javascript:void(0)' onclick='experimentStuExperiment.openSimCheckLog({0})' >{1}</a>",
+                row.expstuno,
+                value);
+            return str;
         }
 
         function teststatusRowFormatter(value, row, index) {
