@@ -99,45 +99,8 @@ public class ExperimentStuController extends BaseController {
 
     @RequestMapping("/openTestLogPage")
     public Object openTestLogPage(Model model, @RequestParam("expstuno") Long expstuno) {
-        String logText = "";
         ExperimentStu es = experimentStuService.selectById(expstuno);
-        UserVo u = userService.selectVoById(es.getStuno());
-        String logFile = checkMissionService.getLogRootDir() + "/" + u.getLoginName() + "_" + u.getName() + "/" + es.getExpno();
-        if (es.getTeststatus() == 2) {
-            logFile += "/build.log";
-        } else if ((es.getTeststatus() == 3) || (es.getTeststatus() == 4) || (es.getTeststatus() == 5)) {
-            logFile += "/testcases.log";
-        } else {
-            logFile += "/notExists.log";
-        }
-
-        if ((!new File(logFile).exists())) {
-            logText = "不存在日志.";
-        } else {
-            BufferedReader br = null;
-            try {
-                br = new BufferedReader(new FileReader(logFile));
-                String line = "";
-                while ((line = br.readLine()) != null) {
-                    logText += line + "\n";
-                }
-                if (br != null) {
-                    br.close();
-                }
-            } catch (FileNotFoundException e) {
-                logger.error(e);
-            } catch (IOException e) {
-                logger.error(e);
-            } finally {
-                if (br != null) {
-                    try {
-                        br.close();
-                    } catch (IOException e) {
-                        logger.error(e);
-                    }
-                }
-            }
-        }
+        String logText = experimentStuService.getCheckLog(es.getStuno(), es.getExpno());
         model.addAttribute("logText", logText);
         return "jdbexes/experiment/experiment_stuOpenTestLog";
     }

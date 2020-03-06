@@ -34,6 +34,10 @@ public interface IExperimentStuService extends IService<ExperimentStu> {
 
     boolean updateSimStatus(Long stuno, Long expno, Integer simstatus, String simdesc);
 
+    boolean updateCheckLog(Long stuno, Long expno, String content);
+
+    String getCheckLog(Long stuno, Long expno);
+
     List<Tree> selectTree();
 
     /**

@@ -1,6 +1,7 @@
 package cn.sdkd.ccse.jdbexes.mapper;
 
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStuTestLog;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import com.wangzhixuan.commons.result.PageInfo;
@@ -36,6 +37,12 @@ public interface ExperimentStuMapper extends BaseMapper<ExperimentStu> {
     boolean updateStatusDesc(@Param("stuno")Long stuno,@Param("expno") Long expno, @Param("teststatus") Integer teststatus, @Param("testdesc") String testdesc);
 
     boolean updateSimStatus(@Param("stuno")Long stuno, @Param("expno")Long expno, @Param("simstatus")Integer simstatus, @Param("simdesc")String simdesc);
+
+    boolean updateCheckLog(@Param("stuno")Long stuno, @Param("expno")Long expno, @Param("content")String content);
+
+    @Select(" select experiment_stu_test_log_no, expno, stuno, content " +
+            " from experiment_stu_test_log where stuno = #{stuno} and expno = #{expno} limit 1 ")
+    ExperimentStuTestLog selectCheckLog(@Param("stuno")Long stuno, @Param("expno")Long expno);
 
     boolean refreshCache();
 }
