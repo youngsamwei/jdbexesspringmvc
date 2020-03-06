@@ -15,8 +15,6 @@ public interface IJPlagService {
 
     void putSubmission(String expno, String name, Submission submission);
 
-    Program getProgram();
-
     void compare(String expno, Submission submission);
 
     void updateSubmission(String expno, String sno, String sname) throws ExitException;
@@ -32,4 +30,5 @@ public interface IJPlagService {
 
     void submitJob(Long stuno, Long expno);
 
+    void refreshSimStatus(Long stuno, Long expno);
 }

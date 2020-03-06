@@ -38,4 +38,9 @@ public interface ExperimentStuTestMapper extends BaseMapper<ExperimentStuTest> {
     List<Map<String, Object>> selectDataGridByExpno(Pagination page, Map<String, Object> params);
 
     boolean refreshCache();
+
+    @Select(" select experiment_stu_test_no, expno, stuno, testtime, testdesc, teststatus, simdesc, simstatus " +
+            " from experiment_stu_test where stuno = #{stuno} and expno = #{expno} " +
+            " order by testtime desc limit 0,1")
+    ExperimentStuTest selectLatestByUserExperiment(@Param("stuno") Long stuno, @Param("expno") Long expno);
 }

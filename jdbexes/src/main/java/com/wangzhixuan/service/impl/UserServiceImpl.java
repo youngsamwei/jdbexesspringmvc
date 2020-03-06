@@ -32,6 +32,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     private UserMapper userMapper;
     @Autowired
     private UserRoleMapper userRoleMapper;
+
+    @Override
+    public List<User> selectAllStudent() {
+        EntityWrapper<User> wrapper = new EntityWrapper<>(new User());
+        wrapper.where("user_type = 1");
+        return this.selectList(wrapper);
+    }
     
     @Override
     public List<User> selectByLoginName(UserVo userVo) {
@@ -112,6 +119,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     public void deleteUserById(Long id) {
         this.deleteById(id);
         userRoleMapper.deleteByUserId(id);
+    }
+
+    @Override
+    public List<User> selectStudentByOrganizationId(Long organization_id) {
+        return userMapper.selectStudentByOrganizationId(organization_id);
     }
 
 }

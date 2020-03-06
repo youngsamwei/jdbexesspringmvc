@@ -1,7 +1,6 @@
 package cn.sdkd.ccse.jdbexes.neo4j.repositories;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
-import cn.sdkd.ccse.jdbexes.neo4j.entities.relationships.Similarity;
 import org.springframework.data.neo4j.annotation.Query;
 import org.springframework.data.neo4j.repository.GraphRepository;
 import org.springframework.data.repository.query.Param;
@@ -37,6 +36,10 @@ public interface IAssignmentRepository extends GraphRepository<Assignment> {
 
     @Query("MATCH (s1:Student { name : {studentName}})-[r2:SUBMIT]-(a1:Assignment) RETURN a1, r2, s1")
     List<Assignment> findByStudentName(@Param("studentName")String studentName);
+
+    @Query("MATCH (s:Student {studentid : {studentid}})-[r1:SUBMIT]-(a:Assignment)" +
+            "<-[r2:BELONGTO]-(e:Experiment { experimentid : {experimentid}}) RETURN a, r1, r2, s, e")
+    List<Assignment> findByStudentIdExpId(@Param("studentid") Long studentid, @Param("experimentid") Long experimentid);
 
     /* 查询指定测试的相似度大于指定值simValue的联系 */
     @Query("START a1 = node({assignmentid}) MATCH (a1)-[r:SIMILARITY]->(a2:Assignment), " +
