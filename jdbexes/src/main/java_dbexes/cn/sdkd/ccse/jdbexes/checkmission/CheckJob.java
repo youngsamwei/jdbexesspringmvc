@@ -105,8 +105,6 @@ public class CheckJob implements Runnable {
                 experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "运行时错误(" + code_test + ")");
         }
 
-        // TODO: 错误信息存入数据库
-
         // Stop and remove container
         dockerClient.killContainerCmd(container.getId()).exec();
         dockerClient.removeContainerCmd(container.getId()).exec();
