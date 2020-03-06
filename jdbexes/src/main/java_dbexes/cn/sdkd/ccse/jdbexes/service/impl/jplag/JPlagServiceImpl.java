@@ -82,7 +82,7 @@ public class JPlagServiceImpl implements IJPlagService {
         initProperties();
         this.submitFilesRootDir = props.getProperty("submitFilesRootDir");
         this.submitTempDir = props.getProperty("submitTempDir");
-        this.poolSize = Integer.parseInt(props.getProperty("jplgPoolSize"));
+        this.poolSize = Integer.parseInt(props.getProperty("jplagPoolSize"));
 
         this.threadPoolExecutor = new ThreadPoolExecutor(this.poolSize, this.poolSize,
                 0L, TimeUnit.MILLISECONDS,
