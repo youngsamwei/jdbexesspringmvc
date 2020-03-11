@@ -10,8 +10,6 @@ import cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.model.Organization;
-import com.wangzhixuan.model.vo.UserVo;
-import com.wangzhixuan.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,8 +17,14 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -44,9 +48,6 @@ public class ExperimentStuController extends BaseController {
     private IJPlagService jPlagService;
 
     @Autowired
-    private IUserService userService;
-
-    @Autowired
     private IExperimentStuTestService experimentStuTestService;
 
     @Autowired
@@ -54,7 +55,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 实验管理页
-     * @return
      */
     @GetMapping("/manager")
     public String manager() {
@@ -70,24 +70,10 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 添加实验页
-     * @return
      */
     @GetMapping("/addPage")
     public String addPage() {
         return "jdbexes/experiment/experiment_stuAdd";
-    }
-
-    /**
-     * 编辑页
-     * @param model
-     * @param id
-     * @return
-     */
-    @RequestMapping("/editPage")
-    public String editPage(Model model, Long id) {
-        ExperimentStu experimentStu = experimentStuService.selectById(id);
-        model.addAttribute("experimentStu", experimentStu);
-        return "jdbexes/experiment/experiment_stuEdit";
     }
 
     @RequestMapping("/submitFilePage")
@@ -137,8 +123,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 添加实验选择
-     * @param expnos
-     * @return
      */
     @PostMapping("/add")
     @ResponseBody
@@ -149,8 +133,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 删除
-     * @param id
-     * @return
      */
     @RequestMapping("/delete")
     @ResponseBody
@@ -162,8 +144,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 更新
-     * @param experimentStu
-     * @return
      */
     @RequestMapping("/edit")
     @ResponseBody
@@ -174,11 +154,6 @@ public class ExperimentStuController extends BaseController {
 
     /**
      * 实验列表
-     * @param page
-     * @param rows
-     * @param sort
-     * @param order
-     * @return
      */
     @PostMapping("/dataGrid")
     @ResponseBody
@@ -192,7 +167,7 @@ public class ExperimentStuController extends BaseController {
     @ResponseBody
     public Object experimentStuByExpno(Integer page, Integer rows, String sort, String order, Long expno, @RequestParam("organization_id") Long organization_id) {
         PageInfo pageInfo = new PageInfo(page, rows, sort, order);
-        Map<String, Object> condition = new HashMap<String, Object>();
+        Map<String, Object> condition = new HashMap<>();
         condition.put("expno", expno);
         condition.put("organization_id", organization_id);
         pageInfo.setCondition(condition);
@@ -215,27 +190,23 @@ public class ExperimentStuController extends BaseController {
 
         try {
             // 默认以utf-8形式
-            String encode = "utf-8";
-            BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), encode));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
 
             ExperimentFilesStu efs = new ExperimentFilesStu();
             efs.setExpstuno(expstuno);
             efs.setFileno(fileno);
 
-            String content = "";
-            String str = "";
-            while ((str = reader.readLine()) != null) {
-                content = content + str + "\n";
+            StringBuilder content = new StringBuilder();
+            for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                content.append(line).append('\n');
             }
-            efs.setFile_content(content);
+            efs.setFile_content(content.toString());
 
             experimentFilesStuService.insert(efs);
             experimentStuService.refreshCache();
             return renderSuccess("上传成功！");
-        } catch (UnsupportedEncodingException e1) {
+        } catch (IOException e1) {
             logger.error(e1);
-        } catch (IOException e) {
-            logger.error(e);
         }
 
         return renderError("上传失败！");
@@ -267,7 +238,7 @@ public class ExperimentStuController extends BaseController {
         logger.info("开始批量测试代码：" + Arrays.toString(expsutnoArray));
 
         List<Long> expstunoList = Arrays.stream(expsutnoArray)
-                .map(x -> Long.valueOf(x))
+                .map(Long::valueOf)
                 .collect(Collectors.toList());
 
         // 重新测试代码
