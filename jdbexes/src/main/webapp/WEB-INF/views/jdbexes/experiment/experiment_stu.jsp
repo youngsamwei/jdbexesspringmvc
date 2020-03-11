@@ -31,16 +31,7 @@
                     title: '测试描述',
                     field: 'testdesc',
                     sortable: true,
-                    formatter: function (value, row, index) {
-                        if (row.teststatus >= 2) {
-                            return $.formatString(
-                                "<a href='javascript:void(0)' onclick='experimentStu.openTestLog({0});'>" +
-                                "{1}" +
-                                "</a>", row.expstuno, value);
-                        } else {
-                            return value;
-                        }
-                    }
+                    formatter: testdescRowFormatter
                 }, {
                     width: '300',
                     title: '与已经提交作业相比',
@@ -72,6 +63,11 @@
                 },
                 toolbar: '#experiment-stu-toolbar'
             });
+        }
+
+        function testdescRowFormatter(value, row, index) {
+            if (row.teststatus <= 0 || row.teststatus >= 5) return value;
+            return $.formatString("<a href='javascript:void(0)' onclick='experimentStu.openTestLog({0})'>{1}</a>", row.expstuno, value);
         }
 
         /**

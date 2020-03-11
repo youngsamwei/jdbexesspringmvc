@@ -91,7 +91,7 @@
         }
 
         function testdescRowFormatter(value, row, index) {
-            if (row.teststatus >= 5) return value;
+            if (row.teststatus <= 0 || row.teststatus >= 5) return value;
             return $.formatString("<a href='javascript:void(0)' onclick='experimentStuExperiment.openTestLog({0})'>{1}</a>", row.expstuno, value);
         }
 
