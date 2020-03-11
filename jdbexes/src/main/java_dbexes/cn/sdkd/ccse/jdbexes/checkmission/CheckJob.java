@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 测试实验作业是否通过测试用例
@@ -34,10 +35,12 @@ public class CheckJob implements Runnable {
     private String sno;
     private String sname;
 
+    private Integer timeout;
+
     private IExperimentFilesStuService experimentFilesStuService;
     private IExperimentStuService experimentStuService;
 
-    public CheckJob(String dockerHost, String image_name, Long stuno, Long expno, String sno, String sname,
+    public CheckJob(String dockerHost, String image_name, Long stuno, Long expno, String sno, String sname, Integer timeout,
                     IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService) {
 
         this.dockerClient = DockerClientBuilder.getInstance(dockerHost).build();
@@ -47,6 +50,8 @@ public class CheckJob implements Runnable {
         this.expno = expno;
         this.sno = sno;
         this.sname = sname;
+
+        this.timeout = timeout;
 
         this.experimentFilesStuService = experimentFilesStuService;
         this.experimentStuService = experimentStuService;
@@ -71,8 +76,9 @@ public class CheckJob implements Runnable {
 
         // Copy file into container
         try {
+            Path tempDir = Files.createTempDirectory("dongmendb");
             for (ExperimentFilesStuVO efsv : experimentFilesStuVOList) {
-                File file = generateTempFile(efsv.getSrcfilename(), efsv.getFile_content());
+                File file = generateTempFile(tempDir, efsv.getSrcfilename(), efsv.getFile_content());
                 String srcDir = file.getAbsolutePath();
                 String distDir = FilenameUtils.separatorsToUnix(
                         FilenameUtils.concat(
@@ -101,6 +107,9 @@ public class CheckJob implements Runnable {
             case 1:
                 experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "结果错误");
                 break;
+            case 124:
+                experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "运行超时");
+                break;
             default:
                 experimentStuService.updateStatusDesc(this.stuno, this.expno, 3, "运行时错误(" + code_test + ")");
         }
@@ -118,8 +127,7 @@ public class CheckJob implements Runnable {
      * @param contect  文件内容
      * @return 临时文件
      */
-    private File generateTempFile(String filename, String contect) throws IOException {
-        Path dir = Files.createTempDirectory("dongmendb");
+    private File generateTempFile(Path dir, String filename, String contect) throws IOException {
         String fullpath = FilenameUtils.concat(dir.toString(), filename);
         File file = new File(fullpath);
 
@@ -179,11 +187,8 @@ public class CheckJob implements Runnable {
 
         InspectExecResponse response = dockerClient.inspectExecCmd(buildExec.getId()).exec();
         Integer code = response.getExitCode();
-        if (code != 0) {
-            String log = out.toString() + "\n\nreturn code: " + code.toString();
-            experimentStuService.updateCheckLog(stuno, expno, log);
-        }
 
+        experimentStuService.updateCheckLog(stuno, expno, out.toString());
         return code;
     }
 
@@ -204,7 +209,7 @@ public class CheckJob implements Runnable {
         OutputStream out = new ByteArrayOutputStream();
         try {
             dockerClient.execStartCmd(testExec.getId()).withDetach(false)
-                    .exec(new ExecStartResultCallback(out, out)).awaitCompletion();
+                    .exec(new ExecStartResultCallback(out, out)).awaitCompletion(this.timeout, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             logger.warn(e.toString());
             return -1;
@@ -212,11 +217,13 @@ public class CheckJob implements Runnable {
 
         InspectExecResponse response = dockerClient.inspectExecCmd(testExec.getId()).exec();
         Integer code = response.getExitCode();
-        if (code != 0) {
-            String log = out.toString() + "\n\nreturn code: " + code.toString();
-            experimentStuService.updateCheckLog(stuno, expno, log);
+
+        if (code == null) {
+            experimentStuService.updateCheckLog(stuno, expno, "");
+            return 124;
         }
 
+        experimentStuService.updateCheckLog(stuno, expno, out.toString());
         return code;
     }
 }
