@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD;
@@ -65,35 +64,45 @@ class JPlagJob implements Runnable {
         }
 
         // 同一实验下的子提交
-        ConcurrentHashMap<String, Submission> submissions = jPlagService.getSubmission(String.valueOf(this.expno));
+        List<Submission> submissions = jPlagService.getSubmission(this.expno);
 
         // 相似度检查结果
-        ConcurrentHashMap<SubmissionKey, Float> simRusultMap = new ConcurrentHashMap<>();
-        for (Map.Entry<String, Submission> entry : submissions.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase(this.submission.name)) {
+        Map<SubmissionKey, Float> simRusultMap = new HashMap<>();
+        for (Submission submission : submissions) {
+            if (submission.name.equalsIgnoreCase(this.submission.name)) {
                 continue;
             }
-            SubmissionKey key = SubmissionKey.valueOf(entry.getKey());
-            float sim = this.jPlagService.compareSubmission(this.submission, entry.getValue());
+            SubmissionKey key = SubmissionKey.valueOf(submission.name);
+            float sim = this.jPlagService.compareSubmission(this.submission, submission);
             simRusultMap.put(key, sim);
         }
 
+
         // 如果与自己已有提交相似度接近 100%，则不创建新提交
+        boolean duplicate = false;
+        Long duplicateAssignmentId = null;
         Set<Long> userAssignments = assignmentRepository.findByStudentIdExpId(this.stuno, this.expno).stream().map(
                 Assignment::getAssignmentid
         ).collect(Collectors.toCollection(HashSet::new));
         for (Map.Entry<SubmissionKey, Float> result : simRusultMap.entrySet()) {
             if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().experiment_stu_test_no)) {
                 logger.info("重复提交，不重新计算相似度");
-                return;
+                duplicate = true;
+                duplicateAssignmentId = result.getKey().experiment_stu_test_no;
+                break;
             }
         }
 
-        // 将提交保存于 neo4j，并创建联系
-        Assignment a1 = generateAssignment();
-        for (Map.Entry<SubmissionKey, Float> result : simRusultMap.entrySet()) {
-            if (result.getValue() >= SIM_THRESHOLD) {
-                createEdgeIfNotExist(this.submissionKey, result.getKey(), result.getValue());
+        Assignment a1;
+        if (duplicate) {
+            a1 = assignmentRepository.findByAssignmentid(duplicateAssignmentId);
+        } else {
+            // 将提交保存于 neo4j，并创建联系
+            a1 = generateAssignment();
+            for (Map.Entry<SubmissionKey, Float> result : simRusultMap.entrySet()) {
+                if (result.getValue() >= SIM_THRESHOLD) {
+                    createEdgeIfNotExist(this.submissionKey, result.getKey(), result.getValue());
+                }
             }
         }
 

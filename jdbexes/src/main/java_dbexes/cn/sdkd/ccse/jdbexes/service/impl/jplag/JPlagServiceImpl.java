@@ -1,6 +1,5 @@
 package cn.sdkd.ccse.jdbexes.service.impl.jplag;
 
-import cn.sdkd.ccse.commons.utils.FileUtils;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStuTestFiles;
@@ -15,11 +14,11 @@ import com.wangzhixuan.model.User;
 import com.wangzhixuan.service.IUserService;
 import jplag.*;
 import jplag.options.CommandLineOptions;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.stereotype.Service;
 
@@ -29,19 +28,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD;
-import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD_MIN;
 
 @Service("JPlagService")
 public class JPlagServiceImpl implements IJPlagService {
@@ -62,6 +56,8 @@ public class JPlagServiceImpl implements IJPlagService {
     @Autowired
     private IExperimentFilesStuService experimentFilesStuService;
     @Autowired
+    private IExperimentFilesService experimentFilesService;
+    @Autowired
     private INeo4jService neo4jService;
     @Autowired
     private IAssignmentRepository assignmentRepository;
@@ -72,26 +68,23 @@ public class JPlagServiceImpl implements IJPlagService {
     @Autowired
     private IExperimentRepository experimentRepository;
     private String submitFilesRootDir;
-    private String submitTempDir;
-    private Properties props = new Properties();
     private Program program;
     // submissions <实验编号,<名称，作业>>
-    private ConcurrentHashMap<String, ConcurrentHashMap<String, Submission>> submissions;
+    private ConcurrentHashMap<Long, List<Submission>> submissions;
 
-    public JPlagServiceImpl() throws ExitException {
-        initProperties();
+    public JPlagServiceImpl() throws ExitException, IOException {
+        Properties props = PropertiesLoaderUtils.loadProperties(new ClassPathResource("/config/checkmission.properties"));
         this.submitFilesRootDir = props.getProperty("submitFilesRootDir");
-        this.submitTempDir = props.getProperty("submitTempDir");
         this.poolSize = Integer.parseInt(props.getProperty("jplagPoolSize"));
 
         this.threadPoolExecutor = new ThreadPoolExecutor(this.poolSize, this.poolSize,
                 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>());
-        submissions = new ConcurrentHashMap<String, ConcurrentHashMap<String, Submission>>();
+                new LinkedBlockingQueue<>());
+        submissions = new ConcurrentHashMap<>();
 
         String[] paras = {
                 "-l", "c/c++",
-                "-s", this.submitFilesRootDir,
+                "-s", submitFilesRootDir,
                 "-clustertype", "min"
         };
         jplag.options.Options options = new CommandLineOptions(paras, null);
@@ -100,61 +93,10 @@ public class JPlagServiceImpl implements IJPlagService {
     }
 
     @Override
-    public Submission getSubmission(String expno, String name) {
-        ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expno);
-        if (expSubmissions != null) {
-            return expSubmissions.get(name);
-        }
-        return null;
-    }
-
-    @Override
-    public void putSubmission(String expno, String name, Submission submission) {
-        ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expno);
-        if (expSubmissions == null) {
-            expSubmissions = new ConcurrentHashMap<String, Submission>();
-            submissions.put(expno, expSubmissions);
-        }
-        expSubmissions.put(name, submission);
-    }
-
-    @Override
-    public void updateSubmission(String expno, String sno, String sname) throws ExitException {
-        File f = new File(this.submitFilesRootDir + "/" + sno + "_" + sname + "/" + expno + "/");
-        Submission submission = new Submission(sno + "_" + sname, f, false, this.program, this.program.get_language());
-        submission.parse();
-
-        this.putSubmission(expno + "", sno + "_" + sname, submission);
-    }
-
-    @Override
-    public boolean compareSubmission(String expno, String sno, String sname) {
-        ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expno);
-        Submission submission = expSubmissions.get(sno + "_" + sname);
-        SortedVector<AllMatches> avgmatches = new SortedVector<AllMatches>(new AllMatches.AvgComparator());
-        for (Map.Entry<String, Submission> entry : expSubmissions.entrySet()) {
-
-            if (entry.getKey().equalsIgnoreCase(submission.name)) {
-                continue;
-            }
-            if (entry.getValue().struct != null) {
-                AllMatches match = this.gSTiling.compare(entry.getValue(), submission);
-                if (match.percent() >= SIM_THRESHOLD_MIN) {
-                    avgmatches.insert(match);
-                }
-            } else {
-                logger.info(entry.getValue().name + " 未提交文件或解析错误.");
-            }
-        }
-        for (AllMatches m : avgmatches) {
-            logger.info("expno:" + expno + "_" + m.subA.name + " - " + m.subB.name + " : " + m.percent() + ", a:" + m.percentA() + ", b:" + m.percentB() + ", max:" + m.percentMaxAB() + ", min:" + m.percentMinAB());
-        }
-        if (avgmatches.size() <= 0) {
-            return true;
-        } else {
-            float simPassedThreshold = 90;
-            return (avgmatches.get(0).percent() < simPassedThreshold);
-        }
+    public void putSubmission(Long expno, Submission submission) {
+        // sno + "_" + sname
+        List<Submission> expSubmissions = submissions.computeIfAbsent(expno, k -> Collections.synchronizedList(new ArrayList<>()));
+        expSubmissions.add(submission);
     }
 
     @Override
@@ -171,27 +113,8 @@ public class JPlagServiceImpl implements IJPlagService {
     }
 
     @Override
-    public ConcurrentHashMap<String, Submission> getSubmission(String expno) {
+    public List<Submission> getSubmission(Long expno) {
         return submissions.get(expno);
-    }
-
-    @Override
-    public void compare(String expno, Submission submission) {
-        ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(expno);
-        SortedVector<AllMatches> avgmatches = new SortedVector<AllMatches>(new AllMatches.AvgComparator());
-        for (Map.Entry<String, Submission> entry : expSubmissions.entrySet()) {
-            if (entry.getValue().struct != null) {
-                AllMatches match = this.gSTiling.compare(entry.getValue(), submission);
-                if (match.percent() >= SIM_THRESHOLD_MIN) {
-                    avgmatches.insert(match);
-                }
-            } else {
-                logger.info(entry.getValue().name + " 未提交文件或解析错误.");
-            }
-        }
-        for (AllMatches m : avgmatches) {
-            logger.info("expno:" + expno + "_" + m.subA.name + " - " + m.subB.name + " : " + m.percent() + ", a:" + m.percentA() + ", b:" + m.percentB() + ", max:" + m.percentMaxAB() + ", min:" + m.percentMinAB());
-        }
     }
 
     @Override
@@ -227,8 +150,9 @@ public class JPlagServiceImpl implements IJPlagService {
     /**
      * 刷新相似度检查结果
      * 仅对 Neo4J 进行查询，不新建测试
-     * @param stuno
-     * @param expno
+     *
+     * @param stuno 学生编号
+     * @param expno 实验编号
      */
     @Override
     public void refreshSimStatus(Long stuno, Long expno) {
@@ -236,7 +160,6 @@ public class JPlagServiceImpl implements IJPlagService {
         if (test == null) {
             logger.warn("学生实验(" + stuno + ", " + expno + ")：未查询到相应 ExperimentStuTest");
             experimentStuService.updateSimStatus(stuno, expno, 1, "未查询到相应 ExperimentStuTest");
-//            submitJob(stuno, expno);
             return;
         }
         long experiment_stu_test_no = test.getExperiment_stu_test_no();
@@ -244,7 +167,6 @@ public class JPlagServiceImpl implements IJPlagService {
         if (assignment == null) {
             experimentStuService.updateSimStatus(stuno, expno, 1, "未查询到相应 Assignment");
             logger.warn("学生实验(" + stuno + ", " + expno + ")：未查询到相应 Assignment");
-//            initOneTest(test);
             return;
         }
 
@@ -255,23 +177,11 @@ public class JPlagServiceImpl implements IJPlagService {
         } else {
             experimentStuService.updateSimStatus(stuno, expno, 0, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
         }
-//        initOneTest(test);
-    }
-
-    private void initProperties() {
-        // 读取配置文件
-        Resource resource = new ClassPathResource("/config/checkmission.properties");
-
-        try {
-            props = PropertiesLoaderUtils.loadProperties(resource);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     @PostConstruct
     /*构造函数完成后开始:初始化已有作业*/
-    private void initSubmissions() throws ExitException {
+    private void initSubmissions() {
         logger.info("处理未计算相似度的作业");
         /*查询未计算相似度的作业*/
         List<ExperimentStuTest> lest = experimentStuTestService.selectListUnCompare();
@@ -280,112 +190,86 @@ public class JPlagServiceImpl implements IJPlagService {
             initOneTest(est);
         }
 
-        for (Map.Entry<String, ConcurrentHashMap<String, Submission>> entry : this.submissions.entrySet()) {
+        for (Map.Entry<Long, List<Submission>> entry : this.submissions.entrySet()) {
             logger.info("* 实验" + entry.getKey() + ": " + entry.getValue().size() + "份.");
         }
     }
 
     /**
      * 初始化相似度检查
-     * @param test
+     *
+     * @param test ExperimentStuTest
      */
     private void initOneTest(ExperimentStuTest test) {
         User user = userService.selectById(test.getStuno());
         logger.info("正在处理作业: (用户: " + user.getLoginName() + "-" + user.getName() + ", 实验编号: " + test.getExpno() + ").");
 
-        Path path = getTempPath(user, test);
-        // 1. 产生临时文件
-        generateTestFile(test, path);
-        // 2. 检查并提交相似度比较任务
-        submitJPlagJob(user, test, path);
-        // 3. 删除临时文件夹
-        FileUtils.removeDir(path.toString());
-
+        try {
+            // 1. 产生临时文件
+            Path path = getTestFilePath(user.getLoginName(), user.getName());
+            generateTestFile(test.getExperiment_stu_test_no().longValue(), path.toString());
+            // 2. 检查并提交相似度比较任务
+            submitJPlagJob(user, test, path);
+        } catch (IOException e) {
+            experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), 1, e.getClass().getName());
+            logger.error(e.getMessage());
+        }
     }
 
-    /**
-     * 根据用户名和测试生成临时文件名
-     * @param user 用户
-     * @param test 测试
-     * @return 创建好的临时文件路径
-     */
-    private Path getTempPath(User user, ExperimentStuTest test) {
-        String filename = "/test-" + user.getLoginName() + "_" + user.getName() + "_" + test.getExpno() + "_" + test.getExperiment_stu_test_no();
-        Path path = Paths.get(this.submitTempDir, filename);
-        // Create if not exists
-        File file = path.toFile();
-        if (!file.exists()) {
-            boolean mkdirs = file.mkdirs();
+    private Path getTestFilePath(String loginName, String name) {
+        String filename = FilenameUtils.concat(submitFilesRootDir, loginName + '_' + name);
+        File dir = new File(filename);
+        if (!dir.exists()) {
+            boolean bool = dir.mkdirs();
         }
-        return path;
+        return dir.toPath();
     }
 
     /**
      * 将数据库中保存的文件写入指定文件夹
-     * @param test 测试
-     * @param path 临时文件路径
      */
-    private void generateTestFile(ExperimentStuTest test, Path path) {
-        // 获取该次测试用到的代码文件
-        List<ExperimentStuTestFiles> estfList = experimentStuTestFilesService.selectListByTestno(test.getExperiment_stu_test_no().longValue());
+    private void generateTestFile(Long experiment_stu_test_no, String tempDir) throws IOException {
+        List<ExperimentStuTestFiles> estfList = experimentStuTestFilesService.selectListByTestno(experiment_stu_test_no);
         for (ExperimentStuTestFiles estf : estfList) {
             ExperimentFilesStu file = experimentFilesStuService.selectById(estf.getExperiment_files_stu_no());
-            if (file != null) {
-                try {
-                    generateTestFile(path, test, file);
-                } catch (IOException e) {
-                    experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), 1, e.getMessage());
-                    logger.error(e.getMessage());
-                }
-            } else {
-                /*TODO: 如果为null，是否需要创建？*/
-                logger.error("estf is null : " + estf.getExperiment_files_stu_no());
-            }
+            String filename = experimentFilesService.selectById(estf.getFileno()).getSrcfilename();
+            String path = FilenameUtils.concat(
+                    tempDir,
+                    FilenameUtils.getName(filename)
+            );
+            String content = file.getFile_content();
+            generateTestFile(path, content);
         }
     }
 
-    private void generateTestFile(Path path, ExperimentStuTest test, ExperimentFilesStu file) throws IOException {
-        OutputStreamWriter op = null;
-        try {
-            // 写入相应目录
-            String fileName = path.resolve(file.getFileno() + ".cpp").toString();
-            op = new OutputStreamWriter(new FileOutputStream(fileName), StandardCharsets.UTF_8);
-            op.append(file.getFile_content());
+    private void generateTestFile(String path, String contect) throws IOException {
+        File file = new File(path);
+
+        try (OutputStreamWriter op = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            op.append(contect);
             op.flush();
-        } catch (IOException e) {
-            throw e;
-        } finally {
-            if (op != null) {
-                op.close();
-            }
         }
     }
 
     /**
      * 检查并提交相似度比较任务 jPlagJob
+     *
      * @param user 用户
      * @param test 测试
      * @param path 临时文件路径
      */
     private void submitJPlagJob(User user, ExperimentStuTest test, Path path) {
-        if (Files.notExists(path)) {
-            return;
-        }
-
-        Submission submission = createSubmission(user, test, path);
+        SubmissionKey submissionKey = new SubmissionKey(user.getLoginName(), user.getName(), test.getExperiment_stu_test_no());
+        Submission submission = new Submission(submissionKey.toString(), path.toFile(),
+                false, this.program, this.program.get_language());
 
         // 尝试解析代码，解析错误则不创建任务
-        if (parseSubmission(test, submission) == false) {
+        if (!parseSubmission(test, submission)) {
             return;
         }
 
         // 否则，创建 jPlagJob 并提交
-        ConcurrentHashMap<String, Submission> expSubmissions = submissions.get(String.valueOf(test.getExpno()));
-        if (expSubmissions == null) {
-            expSubmissions = new ConcurrentHashMap<String, Submission>();
-            submissions.put(test.getExpno().toString(), expSubmissions);
-        }
-        expSubmissions.put(submission.name, submission);
+        putSubmission(test.getExpno().longValue(), submission);
 
         JPlagJob jPlagJob = new JPlagJob(this, submission,
                 test.getStuno().longValue(), test.getExpno().longValue(),
@@ -396,19 +280,10 @@ public class JPlagServiceImpl implements IJPlagService {
         threadPoolExecutor.execute(jPlagJob);
     }
 
-    private Submission createSubmission(User user, ExperimentStuTest test, Path path) {
-        // key: 学生学号_姓名_测试编号
-        SubmissionKey submissionKey = new SubmissionKey(user.getLoginName(), user.getName(), test.getExperiment_stu_test_no().longValue());
-        Submission submission = new Submission(submissionKey.toString(), path.toFile(),
-                false, this.program, this.program.get_language());
-
-        return submission;
-    }
-
     private boolean parseSubmission(ExperimentStuTest test, Submission submission) {
         try {
             submission.parse();
-            if (submission.errors == true || submission.struct == null) {
+            if (submission.errors || submission.struct == null) {
                 experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), 1, "解析错误");
                 return false;
             }

@@ -12,4 +12,8 @@ public abstract class Configuration {
     public static String getSimDescNormal() {
         return "正常";
     }
+
+    public static String testFilePath(String loginName, String name) {
+        return loginName + "_" + name;
+    }
 }

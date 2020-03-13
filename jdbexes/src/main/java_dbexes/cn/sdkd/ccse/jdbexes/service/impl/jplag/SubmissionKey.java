@@ -14,6 +14,12 @@ class SubmissionKey {
         this.experiment_stu_test_no = experiment_stu_test_no;
     }
 
+    public SubmissionKey(String tsno, String tsname, Integer experiment_stu_test_no) {
+        this.tsno = tsno;
+        this.tsname = tsname;
+        this.experiment_stu_test_no = experiment_stu_test_no.longValue();
+    }
+
     static SubmissionKey valueOf(String key) throws IllegalArgumentException {
         try {
             String[] keys = key.split("_");
