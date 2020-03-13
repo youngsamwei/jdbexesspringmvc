@@ -220,6 +220,7 @@ public class ExperimentStuController extends BaseController {
         logger.info("开始测试代码.");
         checkMissionService.submitJob(getUserId(), expno);
 
+        experimentStuService.updateStatusDesc(getUserId(), expno, -1, "测试中");
         experimentStuService.updateSimStatus(getUserId(), expno, -1, "正在计算相似度");
         jPlagService.submitJob(getUserId(), expno);
 
@@ -261,7 +262,6 @@ public class ExperimentStuController extends BaseController {
 
         return renderSuccess("开始批量测试");
     }
-
 
     @PostMapping(value = "/tree")
     @ResponseBody
