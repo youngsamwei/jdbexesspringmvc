@@ -12,4 +12,4 @@ CREATE TABLE `experiment_stu_test_latest`
 )
     ENGINE = InnoDB
     DEFAULT CHARSET = utf8
-    comment ''保存最新测试的编号'';
+    comment '保存最新测试的编号';
