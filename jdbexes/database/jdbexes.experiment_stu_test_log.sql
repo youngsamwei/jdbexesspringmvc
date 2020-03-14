@@ -8,7 +8,7 @@ CREATE TABLE `experiment_stu_test_log`
         PRIMARY KEY (`experiment_stu_test_log_no`),
     CONSTRAINT `experiment_stu_test_log_fk_expno` FOREIGN KEY (`expno`) REFERENCES `experiment` (`expno`),
     CONSTRAINT `experiment_stu_test_log_fk_stuno` FOREIGN KEY (`stuno`) REFERENCES `user` (`id`),
-    CONSTRAINT `experiment_stu_test_log_pk` UNIQUE KEY (`expno`, `stuno`)
+    CONSTRAINT `experiment_stu_test_log_uk` UNIQUE KEY (`expno`, `stuno`)
 )
     ENGINE = InnoDB
     DEFAULT CHARSET = utf8

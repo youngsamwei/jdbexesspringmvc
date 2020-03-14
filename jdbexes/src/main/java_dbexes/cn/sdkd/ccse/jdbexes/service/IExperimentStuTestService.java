@@ -18,4 +18,6 @@ public interface IExperimentStuTestService extends IService<ExperimentStuTest> {
     List<ExperimentStuTest> selectListUnCompare();
 
     ExperimentStuTest findLatestByUserExperiment(Long stuno, Long expno);
+
+    List<ExperimentStuTest> findLatestByExpno(Long expno);
 }

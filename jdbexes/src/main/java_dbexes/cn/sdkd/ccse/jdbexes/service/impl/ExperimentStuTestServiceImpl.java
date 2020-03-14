@@ -36,4 +36,16 @@ public class ExperimentStuTestServiceImpl extends ServiceImpl<ExperimentStuTestM
     public ExperimentStuTest findLatestByUserExperiment(Long stuno, Long expno) {
         return experimentStuTestMapper.selectLatestByUserExperiment(stuno, expno);
     }
+
+    @Override
+    public List<ExperimentStuTest> findLatestByExpno(Long expno) {
+        return experimentStuTestMapper.selectListLatestByExpno(expno);
+    }
+
+    @Override
+    public boolean insert(ExperimentStuTest entity) {
+        super.insert(entity);
+        return experimentStuTestMapper.insertLatestTest(entity.getExperiment_stu_test_no().longValue(),
+                entity.getStuno().longValue(), entity.getExpno().longValue());
+    }
 }

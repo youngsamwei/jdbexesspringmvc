@@ -67,14 +67,14 @@ class JPlagJob implements Runnable {
         List<Submission> submissions = jPlagService.getSubmission(this.expno);
 
         // 相似度检查结果
-        Map<SubmissionKey, Float> simRusultMap = new HashMap<>();
+        Map<SubmissionKey, Float> simResultMap = new HashMap<>();
         for (Submission submission : submissions) {
             if (submission.name.equalsIgnoreCase(this.submission.name)) {
                 continue;
             }
             SubmissionKey key = SubmissionKey.valueOf(submission.name);
-            float sim = this.jPlagService.compareSubmission(this.submission, submission);
-            simRusultMap.put(key, sim);
+            float sim = this.jPlagService.compareSubmission(this.expno, this.submission, submission);
+            simResultMap.put(key, sim);
         }
 
 
@@ -84,7 +84,7 @@ class JPlagJob implements Runnable {
         Set<Long> userAssignments = assignmentRepository.findByStudentIdExpId(this.stuno, this.expno).stream().map(
                 Assignment::getAssignmentid
         ).collect(Collectors.toCollection(HashSet::new));
-        for (Map.Entry<SubmissionKey, Float> result : simRusultMap.entrySet()) {
+        for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
             if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().experiment_stu_test_no)) {
                 logger.info("重复提交，不重新计算相似度");
                 duplicate = true;
@@ -95,11 +95,12 @@ class JPlagJob implements Runnable {
 
         Assignment a1;
         if (duplicate) {
+            // 若重复，仅刷新旧提交的结果
             a1 = assignmentRepository.findByAssignmentid(duplicateAssignmentId);
         } else {
             // 将提交保存于 neo4j，并创建联系
             a1 = generateAssignment();
-            for (Map.Entry<SubmissionKey, Float> result : simRusultMap.entrySet()) {
+            for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
                 if (result.getValue() >= SIM_THRESHOLD) {
                     createEdgeIfNotExist(this.submissionKey, result.getKey(), result.getValue());
                 }

@@ -3,6 +3,7 @@ package cn.sdkd.ccse.jdbexes.mapper;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.baomidou.mybatisplus.plugins.pagination.Pagination;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -43,4 +44,14 @@ public interface ExperimentStuTestMapper extends BaseMapper<ExperimentStuTest> {
             " from experiment_stu_test where stuno = #{stuno} and expno = #{expno} " +
             " order by testtime desc limit 0,1")
     ExperimentStuTest selectLatestByUserExperiment(@Param("stuno") Long stuno, @Param("expno") Long expno);
+
+    @Select(" select estl.experiment_stu_test_no, estl.expno, estl.stuno, testtime, testdesc, teststatus, simdesc, simstatus " +
+            " from experiment_stu_test est, experiment_stu_test_latest estl " +
+            " where est.experiment_stu_test_no = estl.experiment_stu_test_no and estl.expno = #{expno}")
+    List<ExperimentStuTest> selectListLatestByExpno(@Param("expno") Long expno);
+
+    @Insert(" insert into experiment_stu_test_latest(stuno, expno, experiment_stu_test_no)" +
+            " value (#{expno}, #{stuno}, #{experiment_stu_test_no}) " +
+            " on duplicate key update experiment_stu_test_no = #{experiment_stu_test_no} ")
+    boolean insertLatestTest(@Param("experiment_stu_test_no") Long experiment_stu_test_no, @Param("stuno") Long stuno, @Param("expno") Long expno);
 }
