@@ -62,45 +62,46 @@ public class JPlagJob implements Runnable {
 
     @Override
     public void run() {
-        logger.debug("Runing similarity analysers for " + submission.name);
+        logger.debug("Running similarity analysers for (用户: " + this.submissionKey.getTsno() + "-" + this.submissionKey.getTsname() + ", 实验编号: " + this.expno + ").");
         experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_NOT_YET, Config.SIM_DESC_RUNNING);
 
-        if (assignmentAlreadyExists()) {
-            return;
-        }
-
-        // 同一实验下的子提交
-        ConcurrentHashMap<Long, Submission> submissions = jPlagService.getSubmission(this.expno);
-
-        // 相似度检查结果
-        Map<SubmissionKey, Float> simResultMap = new HashMap<>();
-        for (Map.Entry<Long, Submission> entry : submissions.entrySet()) {
-            Submission submission = entry.getValue();
-            if (submission.name.equalsIgnoreCase(this.submission.name)) {
-                continue;
-            }
-            SubmissionKey key = SubmissionKey.valueOf(submission.name);
-            float sim = this.jPlagService.compareSubmission(this.expno, this.submission, submission);
-            simResultMap.put(key, sim);
-        }
-
-
-        // 如果与自己已有提交相似度接近 100%，则不创建新提交
         boolean duplicate = false;
         Long duplicateAssignmentId = null;
-        Set<Long> userAssignments = assignmentRepository.findByStudentIdExpId(this.stuno, this.expno).stream().map(
-                Assignment::getAssignmentid
-        ).collect(Collectors.toCollection(HashSet::new));
+        Map<SubmissionKey, Float> simResultMap = new HashMap<>();
+        if (assignmentAlreadyExists()) {
+            logger.warn("Assignmentid " + this.submissionKey.getExperiment_stu_test_no() + " 已经存在.");
+            duplicate = true;
+            duplicateAssignmentId = this.submissionKey.getExperiment_stu_test_no();
+        } else {
+            // 同一实验下的子提交
+            ConcurrentHashMap<Long, Submission> submissions = jPlagService.getSubmission(this.expno);
 
-        logger.debug("当前编号：" + this.submission.name);
-        logger.debug("已提交编号：" + Arrays.toString(userAssignments.toArray()));
+            // 相似度检查结果
+            for (Map.Entry<Long, Submission> entry : submissions.entrySet()) {
+                Submission submission = entry.getValue();
+                if (submission.name.equalsIgnoreCase(this.submission.name)) {
+                    continue;
+                }
+                SubmissionKey key = SubmissionKey.valueOf(submission.name);
+                float sim = this.jPlagService.compareSubmission(this.expno, this.submission, submission);
+                simResultMap.put(key, sim);
+            }
 
-        for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
-            if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().getExperiment_stu_test_no())) {
-                logger.debug("重复提交，不重新计算相似度");
-                duplicate = true;
-                duplicateAssignmentId = result.getKey().getExperiment_stu_test_no();
-                break;
+            // 如果与自己已有提交相似度接近 100%，则不创建新提交
+            Set<Long> userAssignments = assignmentRepository.findByStudentIdExpId(this.stuno, this.expno).stream().map(
+                    Assignment::getAssignmentid
+            ).collect(Collectors.toCollection(HashSet::new));
+
+            logger.debug("当前编号：" + this.submission.name);
+            logger.debug("已提交编号：" + Arrays.toString(userAssignments.toArray()));
+
+            for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
+                if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().getExperiment_stu_test_no())) {
+                    logger.debug("重复提交，不重新计算相似度");
+                    duplicate = true;
+                    duplicateAssignmentId = result.getKey().getExperiment_stu_test_no();
+                    break;
+                }
             }
         }
 
@@ -115,6 +116,7 @@ public class JPlagJob implements Runnable {
             a1 = generateAssignment();
             // 更新用户最新实验
             experimentStuTestService.insertLatestTest(stuno, expno, a1.getAssignmentid());
+            // 在 Neo4J 中创建边
             for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
                 if (result.getValue() >= SIM_THRESHOLD) {
                     createEdgeIfNotExist(this.submissionKey, result.getKey(), result.getValue());
