@@ -62,6 +62,8 @@ public class CheckJob implements Runnable {
     public void run() {
         logger.info("Running test for (" + sno + ", " + sname + ").");
 
+        experimentStuService.updateStatusDesc(stuno, expno, -1, "测试中");
+
         List<ExperimentFilesStuVO> experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
         String testTarget = experimentFilesStuVOList.get(0).getTesttarget();
 

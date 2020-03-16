@@ -6,7 +6,7 @@ import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.service.*;
-import cn.sdkd.ccse.jdbexes.jplagjob.Configuration;
+import cn.sdkd.ccse.jdbexes.jplagjob.Config;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.model.Organization;
@@ -109,7 +109,7 @@ public class ExperimentStuController extends BaseController {
 
         logger.debug("node id: " + assignment.getId());
 
-        List<Student> students = neo4jService.findStudentBySimValueAssignmentid(Configuration.SIM_THRESHOLD, assignment.getId());
+        List<Student> students = neo4jService.findStudentBySimValueAssignmentid(Config.SIM_THRESHOLD, assignment.getId());
 
         StringBuilder simResult = new StringBuilder();
         for (Student student : students) {
@@ -219,9 +219,6 @@ public class ExperimentStuController extends BaseController {
 
         logger.info("开始测试代码.");
         checkMissionService.submitJob(getUserId(), expno);
-
-        experimentStuService.updateStatusDesc(getUserId(), expno, -1, "测试中");
-        experimentStuService.updateSimStatus(getUserId(), expno, -1, "正在计算相似度");
         jPlagService.submitJob(getUserId(), expno);
 
         return renderSuccess("开始测试");

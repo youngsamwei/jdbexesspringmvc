@@ -21,8 +21,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static cn.sdkd.ccse.jdbexes.jplagjob.Configuration.SIM_THRESHOLD;
-import static cn.sdkd.ccse.jdbexes.jplagjob.Configuration.SIM_THRESHOLD_SAME;
+import static cn.sdkd.ccse.jdbexes.jplagjob.Config.SIM_THRESHOLD;
+import static cn.sdkd.ccse.jdbexes.jplagjob.Config.SIM_THRESHOLD_SAME;
 
 /**
  * 相似度计算任务
@@ -62,6 +62,9 @@ public class JPlagJob implements Runnable {
 
     @Override
     public void run() {
+        logger.debug("Runing similarity analysers for " + submission.name);
+        experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_NOT_YET, Config.SIM_DESC_RUNNING);
+
         if (assignmentAlreadyExists()) {
             return;
         }
@@ -134,9 +137,9 @@ public class JPlagJob implements Runnable {
 
         // 若相似度超过阈值的学生个数大于0，则状态是3，否则状态是0
         if (lss.size() > 0) {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, 3, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
+            experimentStuService.updateSimStatus(this.stuno, this.expno, Config.SIM_STATUS_PLAGIARISM, Config.getSimDesc(lss.size(), SIM_THRESHOLD));
         } else {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, 0, Configuration.getSimDescNormal());
+            experimentStuService.updateSimStatus(this.stuno, this.expno, Config.SIM_STATUS_NORMAL, Config.SIM_DESC_NORMAL);
         }
     }
 

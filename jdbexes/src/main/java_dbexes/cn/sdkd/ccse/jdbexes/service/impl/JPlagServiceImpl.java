@@ -1,6 +1,6 @@
 package cn.sdkd.ccse.jdbexes.service.impl;
 
-import cn.sdkd.ccse.jdbexes.jplagjob.Configuration;
+import cn.sdkd.ccse.jdbexes.jplagjob.Config;
 import cn.sdkd.ccse.jdbexes.jplagjob.JPlagJob;
 import cn.sdkd.ccse.jdbexes.jplagjob.SubmissionKey;
 import cn.sdkd.ccse.jdbexes.model.Experiment;
@@ -43,7 +43,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static cn.sdkd.ccse.jdbexes.jplagjob.Configuration.SIM_THRESHOLD;
+import static cn.sdkd.ccse.jdbexes.jplagjob.Config.SIM_THRESHOLD;
 
 @Service
 public class JPlagServiceImpl implements IJPlagService {
@@ -122,6 +122,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Override
     public void submitJob(Long stuno, Long expno) {
+        experimentStuService.updateStatusDesc(stuno, expno, Config.SIM_STATUS_NOT_YET, Config.SIM_DESC_NOT_YET);
         // 检查 Student 和 Experiment 是否存在，不存在则创建
         createStudentAndExperimentOnNeo4JIfNotExists(stuno, expno);
         // 创建一次测试
@@ -132,16 +133,18 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Override
     public void refreshSimStatus(Long stuno, Long expno) {
+        experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_NOT_YET, Config.SIM_DESC_RUNNING);
+
         ExperimentStuTest test = experimentStuTestService.findLatestByUserExperiment(stuno, expno);
         if (test == null) {
             logger.warn("学生实验(" + stuno + ", " + expno + ")：未查询到相应 ExperimentStuTest");
-            experimentStuService.updateSimStatus(stuno, expno, 1, "未查询到相应 ExperimentStuTest");
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, "未查询到相应 ExperimentStuTest");
             return;
         }
         long experiment_stu_test_no = test.getExperiment_stu_test_no();
         Assignment assignment = neo4jService.findAssignmentByExperimentStuTestNo(experiment_stu_test_no);
         if (assignment == null) {
-            experimentStuService.updateSimStatus(stuno, expno, 1, "未查询到相应 Assignment");
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, "未查询到相应 Assignment");
             logger.warn("学生实验(" + stuno + ", " + expno + ")：未查询到相应 Assignment");
             return;
         }
@@ -149,9 +152,9 @@ public class JPlagServiceImpl implements IJPlagService {
         List<Student> lss = this.studentRepository.findBySimValueAssignmentid(SIM_THRESHOLD, assignment.getId());
         // 若相似度超过阈值的学生个数大于0，则状态是3，否则状态是0
         if (lss.size() > 0) {
-            experimentStuService.updateSimStatus(stuno, expno, 3, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_PLAGIARISM, Config.getSimDesc(lss.size(), SIM_THRESHOLD));
         } else {
-            experimentStuService.updateSimStatus(stuno, expno, 0, Configuration.getSimDesc(lss.size(), SIM_THRESHOLD));
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_NORMAL, Config.SIM_DESC_NORMAL);
         }
     }
 
@@ -231,7 +234,7 @@ public class JPlagServiceImpl implements IJPlagService {
             generateTestFiles(experiment_stu_test_no, getTestFilePath(expno, loginName, name));
         } catch (Exception e) {
             logger.error(e.toString());
-            experimentStuService.updateSimStatus(stuno, expno, 1, e.getClass().getName());
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, e.getClass().getName());
         }
         // 2. 创建 Submission
         Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no);
@@ -280,11 +283,11 @@ public class JPlagServiceImpl implements IJPlagService {
         try {
             submission.parse();
             if (submission.errors || submission.struct == null) {
-                experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), 1, "解析错误");
+                experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), Config.SIM_STATUS_FAILED, Config.SIM_DESC_SYNAX_ERR);
                 return false;
             }
         } catch (ExitException e) {
-            experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), 1, "语法错误");
+            experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), Config.SIM_STATUS_FAILED, Config.SIM_DESC_PARSER_ERR);
             logger.error(e.toString());
             return false;
         }
