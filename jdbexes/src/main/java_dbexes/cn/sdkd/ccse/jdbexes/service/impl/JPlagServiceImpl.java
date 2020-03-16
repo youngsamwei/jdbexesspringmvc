@@ -34,7 +34,9 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -76,7 +78,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     private Map<Long, GSTiling> gsTilingMap;
     private Map<Long, Program> programMap;
-    private ConcurrentHashMap<Long, List<Submission>> submissions; // <实验编号,<名称，作业>>
+    private ConcurrentHashMap<Long, ConcurrentHashMap<Long, Submission>> submissions; // <实验编号, <学生编号，作业>>
 
     public JPlagServiceImpl() throws IOException {
         Properties props = PropertiesLoaderUtils.loadProperties(new ClassPathResource("/config/checkmission.properties"));
@@ -106,7 +108,7 @@ public class JPlagServiceImpl implements IJPlagService {
     }
 
     @Override
-    public List<Submission> getSubmission(Long expno) {
+    public ConcurrentHashMap<Long, Submission> getSubmission(Long expno) {
         return submissions.get(expno);
     }
 
@@ -153,6 +155,12 @@ public class JPlagServiceImpl implements IJPlagService {
         }
     }
 
+    @Override
+    public void putSubmission(Long stuno, Long expno, Submission submission) {
+        ConcurrentHashMap<Long, Submission> expSubmissions = submissions.computeIfAbsent(expno, v -> new ConcurrentHashMap<>());
+        expSubmissions.put(stuno, submission);
+    }
+
     // region 恢复提交列表
 
     @PostConstruct
@@ -171,7 +179,7 @@ public class JPlagServiceImpl implements IJPlagService {
             initOneTest(est);
         }
 
-        for (Map.Entry<Long, List<Submission>> entry : this.submissions.entrySet()) {
+        for (Map.Entry<Long, ConcurrentHashMap<Long, Submission>> entry : this.submissions.entrySet()) {
             logger.info("* 实验" + entry.getKey() + ": " + entry.getValue().size() + "份.");
         }
     }
@@ -199,7 +207,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
             Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no);
             if (parseSubmission(test, submission)) {
-                putSubmission(expno, submission);
+                putSubmission(stuno, expno, submission);
             }
         }
     }
@@ -229,11 +237,10 @@ public class JPlagServiceImpl implements IJPlagService {
         Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no);
         // 3. 解析错误则不创建任务
         if (!parseSubmission(test, submission)) {
-            logger.info("解析错误 (用户: \" + loginName + \"-\" + name + \", 实验编号: \" + expno + \")");
+            logger.info("解析错误 (用户: + (用户: \" + loginName + \"-\" + name + \", 实验编号: \" + expno + \").");
             return;
         }
         // 4. 否则，创建并提交相似度比较任务
-        putSubmission(expno, submission);
         submitJPlagJob(submission, stuno, expno);
     }
 
@@ -241,6 +248,7 @@ public class JPlagServiceImpl implements IJPlagService {
      * 将数据库中保存的文件写入指定文件夹
      */
     private void generateTestFiles(Long experiment_stu_test_no, String dir) throws IOException {
+        logger.debug("write " + dir);
         Files.createDirectories(Paths.get(dir));
         List<ExperimentStuTestFiles> estfList = experimentStuTestFilesService.selectListByTestno(experiment_stu_test_no);
         for (ExperimentStuTestFiles estf : estfList) {
@@ -318,11 +326,6 @@ public class JPlagServiceImpl implements IJPlagService {
         SubmissionKey submissionKey = new SubmissionKey(loginName, name, experiment_stu_test_no);
         Program program = programMap.get(expno);
         return new Submission(submissionKey.toString(), new File(path), false, program, program.get_language());
-    }
-
-    private void putSubmission(Long expno, Submission submission) {
-        List<Submission> expSubmissions = submissions.computeIfAbsent(expno, k -> Collections.synchronizedList(new ArrayList<>()));
-        expSubmissions.add(submission);
     }
 
     /**

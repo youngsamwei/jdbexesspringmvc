@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static cn.sdkd.ccse.jdbexes.jplagjob.Configuration.SIM_THRESHOLD;
@@ -66,11 +67,12 @@ public class JPlagJob implements Runnable {
         }
 
         // 同一实验下的子提交
-        List<Submission> submissions = jPlagService.getSubmission(this.expno);
+        ConcurrentHashMap<Long, Submission> submissions = jPlagService.getSubmission(this.expno);
 
         // 相似度检查结果
         Map<SubmissionKey, Float> simResultMap = new HashMap<>();
-        for (Submission submission : submissions) {
+        for (Map.Entry<Long, Submission> entry : submissions.entrySet()) {
+            Submission submission = entry.getValue();
             if (submission.name.equalsIgnoreCase(this.submission.name)) {
                 continue;
             }
@@ -86,9 +88,13 @@ public class JPlagJob implements Runnable {
         Set<Long> userAssignments = assignmentRepository.findByStudentIdExpId(this.stuno, this.expno).stream().map(
                 Assignment::getAssignmentid
         ).collect(Collectors.toCollection(HashSet::new));
+
+        logger.debug("当前编号：" + this.submission.name);
+        logger.debug("已提交编号：" + Arrays.toString(userAssignments.toArray()));
+
         for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
             if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().getExperiment_stu_test_no())) {
-                logger.info("重复提交，不重新计算相似度");
+                logger.debug("重复提交，不重新计算相似度");
                 duplicate = true;
                 duplicateAssignmentId = result.getKey().getExperiment_stu_test_no();
                 break;
@@ -100,6 +106,8 @@ public class JPlagJob implements Runnable {
             // 若重复，仅刷新旧提交的结果
             a1 = assignmentRepository.findByAssignmentid(duplicateAssignmentId);
         } else {
+            // 刷新 Submission 列表
+            jPlagService.putSubmission(stuno, expno, submission);
             // 将提交保存于 neo4j，并创建联系
             a1 = generateAssignment();
             // 更新用户最新实验
@@ -113,6 +121,8 @@ public class JPlagJob implements Runnable {
 
         // 获取相似度比较结果，写入数据库
         updateSimStatus(a1);
+
+        logger.debug("simcheck end");
     }
 
     /**

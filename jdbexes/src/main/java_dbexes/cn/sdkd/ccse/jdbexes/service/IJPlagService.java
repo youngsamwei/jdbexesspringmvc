@@ -2,7 +2,7 @@ package cn.sdkd.ccse.jdbexes.service;
 
 import jplag.Submission;
 
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by sam on 2019/1/7.
@@ -14,7 +14,7 @@ public interface IJPlagService {
     /**
      * 获得实验编号 expno 对应的 submission 列表
      */
-    List<Submission> getSubmission(Long expno);
+    ConcurrentHashMap<Long, Submission> getSubmission(Long expno);
 
     void monitorJob();
 
@@ -28,4 +28,6 @@ public interface IJPlagService {
      * @param expno 实验编号
      */
     void refreshSimStatus(Long stuno, Long expno);
+
+    void putSubmission(Long stuno, Long expno, Submission submission);
 }
