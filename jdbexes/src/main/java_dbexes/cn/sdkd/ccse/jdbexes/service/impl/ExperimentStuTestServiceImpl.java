@@ -43,9 +43,7 @@ public class ExperimentStuTestServiceImpl extends ServiceImpl<ExperimentStuTestM
     }
 
     @Override
-    public boolean insert(ExperimentStuTest entity) {
-        super.insert(entity);
-        return experimentStuTestMapper.insertLatestTest(entity.getExperiment_stu_test_no().longValue(),
-                entity.getStuno().longValue(), entity.getExpno().longValue());
+    public boolean insertLatestTest(Long stuno, Long expno, Long experiment_stu_test_no) {
+        return experimentStuTestMapper.insertLatestTest(stuno, expno, experiment_stu_test_no);
     }
 }

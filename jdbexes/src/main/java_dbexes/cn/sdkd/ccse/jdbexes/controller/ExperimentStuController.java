@@ -6,7 +6,7 @@ import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.service.*;
-import cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration;
+import cn.sdkd.ccse.jdbexes.jplagjob.Configuration;
 import com.wangzhixuan.commons.base.BaseController;
 import com.wangzhixuan.commons.result.PageInfo;
 import com.wangzhixuan.model.Organization;

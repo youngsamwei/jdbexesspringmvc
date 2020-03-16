@@ -1,4 +1,4 @@
-package cn.sdkd.ccse.jdbexes.service.impl.jplag;
+package cn.sdkd.ccse.jdbexes.jplagjob;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
@@ -9,6 +9,7 @@ import cn.sdkd.ccse.jdbexes.neo4j.repositories.IExperimentRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.ISimilarityRepository;
 import cn.sdkd.ccse.jdbexes.neo4j.repositories.IStudentRepository;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
+import cn.sdkd.ccse.jdbexes.service.IExperimentStuTestService;
 import cn.sdkd.ccse.jdbexes.service.IJPlagService;
 import jplag.Submission;
 import org.neo4j.ogm.annotation.typeconversion.DateString;
@@ -19,19 +20,20 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD;
-import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD_SAME;
+import static cn.sdkd.ccse.jdbexes.jplagjob.Configuration.SIM_THRESHOLD;
+import static cn.sdkd.ccse.jdbexes.jplagjob.Configuration.SIM_THRESHOLD_SAME;
 
 /**
  * 相似度计算任务
  */
-class JPlagJob implements Runnable {
+public class JPlagJob implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(JPlagJob.class);
     private Long stuno;
     private Long expno;
     private SubmissionKey submissionKey;
     private IJPlagService jPlagService;
     private IExperimentStuService experimentStuService;
+    private IExperimentStuTestService experimentStuTestService;
 
     private IStudentRepository studentRepository;
     private IAssignmentRepository assignmentRepository;
@@ -41,10 +43,9 @@ class JPlagJob implements Runnable {
     private Submission submission;
 
     public JPlagJob(IJPlagService jPlagService, Submission submission, Long stuno, Long expno,
-                    IExperimentStuService experimentStuService,
-                    IAssignmentRepository assignmentRepository,
-                    ISimilarityRepository similarityRepository, IStudentRepository studentRepository,
-                    IExperimentRepository experimentRepository) {
+                    IExperimentStuService experimentStuService, IExperimentStuTestService experimentStuTestService,
+                    IAssignmentRepository assignmentRepository, ISimilarityRepository similarityRepository,
+                    IStudentRepository studentRepository, IExperimentRepository experimentRepository) {
         this.jPlagService = jPlagService;
         this.stuno = stuno;
         this.expno = expno;
@@ -55,6 +56,7 @@ class JPlagJob implements Runnable {
         this.studentRepository = studentRepository;
         this.experimentRepository = experimentRepository;
         this.experimentStuService = experimentStuService;
+        this.experimentStuTestService = experimentStuTestService;
     }
 
     @Override
@@ -85,10 +87,10 @@ class JPlagJob implements Runnable {
                 Assignment::getAssignmentid
         ).collect(Collectors.toCollection(HashSet::new));
         for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
-            if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().experiment_stu_test_no)) {
+            if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().getExperiment_stu_test_no())) {
                 logger.info("重复提交，不重新计算相似度");
                 duplicate = true;
-                duplicateAssignmentId = result.getKey().experiment_stu_test_no;
+                duplicateAssignmentId = result.getKey().getExperiment_stu_test_no();
                 break;
             }
         }
@@ -100,6 +102,8 @@ class JPlagJob implements Runnable {
         } else {
             // 将提交保存于 neo4j，并创建联系
             a1 = generateAssignment();
+            // 更新用户最新实验
+            experimentStuTestService.insertLatestTest(stuno, expno, a1.getAssignmentid());
             for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
                 if (result.getValue() >= SIM_THRESHOLD) {
                     createEdgeIfNotExist(this.submissionKey, result.getKey(), result.getValue());
@@ -135,13 +139,13 @@ class JPlagJob implements Runnable {
     private void createEdgeIfNotExist(SubmissionKey key1, SubmissionKey key2, float sim) {
         // 存在则返回
         List<Similarity> sims = this.similarityRepository.findSimilarityBy2ExperimentStuTestNo(
-                key1.experiment_stu_test_no, key2.experiment_stu_test_no);
+                key1.getExperiment_stu_test_no(), key2.getExperiment_stu_test_no());
         if (!sims.isEmpty()) {
             return;
         }
 
-        Assignment a1 = this.assignmentRepository.findByAssignmentid(key1.experiment_stu_test_no);
-        Assignment a2 = this.assignmentRepository.findByAssignmentid(key2.experiment_stu_test_no);
+        Assignment a1 = this.assignmentRepository.findByAssignmentid(key1.getExperiment_stu_test_no());
+        Assignment a2 = this.assignmentRepository.findByAssignmentid(key2.getExperiment_stu_test_no());
         if (a1 == null || a2 == null) {
             return;
         }
@@ -149,10 +153,10 @@ class JPlagJob implements Runnable {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat(DateString.ISO_8601);
             if (a1.getSubmitDate().after(a2.getSubmitDate())) {
-                similarityRepository.createSimilarity(key1.experiment_stu_test_no, key2.experiment_stu_test_no, sdf.format(new Date()), sim);
+                similarityRepository.createSimilarity(key1.getExperiment_stu_test_no(), key2.getExperiment_stu_test_no(), sdf.format(new Date()), sim);
                 logger.debug("creating edge " + key1 + " -> " + key2 + ", " + sim);
             } else {
-                similarityRepository.createSimilarity(key2.experiment_stu_test_no, key1.experiment_stu_test_no, sdf.format(new Date()), sim);
+                similarityRepository.createSimilarity(key2.getExperiment_stu_test_no(), key1.getExperiment_stu_test_no(), sdf.format(new Date()), sim);
                 logger.debug("creating edge " + key2 + " <- " + key1 + ", " + sim);
             }
         } catch (Exception e) {
@@ -166,7 +170,7 @@ class JPlagJob implements Runnable {
      */
     private Assignment generateAssignment() throws NullPointerException {
         Assignment a1 = new Assignment();
-        a1.setAssignmentid(this.submissionKey.experiment_stu_test_no);
+        a1.setAssignmentid(this.submissionKey.getExperiment_stu_test_no());
         a1.setSubmitDate(new Date());
         a1 = this.assignmentRepository.save(a1);
         Student s = studentRepository.findByStudentid(this.stuno);
@@ -178,7 +182,7 @@ class JPlagJob implements Runnable {
     }
 
     private boolean assignmentAlreadyExists() {
-        Assignment a1 = this.assignmentRepository.findByAssignmentid(this.submissionKey.experiment_stu_test_no);
+        Assignment a1 = this.assignmentRepository.findByAssignmentid(this.submissionKey.getExperiment_stu_test_no());
         return a1 != null;
     }
 

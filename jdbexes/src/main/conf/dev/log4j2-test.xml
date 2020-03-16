@@ -37,7 +37,7 @@
 
         <logger name="cn.sdkd.ccse.jdbexes" level="DEBUG"/>
         <logger name="cn.sdkd.ccse.commons.utils" level="DEBUG"/>
-        <logger name="cn.sdkd.ccse.jdbexes.service.impl.jplag.JPlagJob" level="DEBUG"/>
+        <logger name="cn.sdkd.ccse.jdbexes.jplagjob.JPlagJob" level="DEBUG"/>
         
         <Root level="info">
             <AppenderRef ref="Console" />

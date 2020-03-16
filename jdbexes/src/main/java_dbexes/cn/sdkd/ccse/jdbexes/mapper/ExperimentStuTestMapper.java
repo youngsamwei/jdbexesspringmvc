@@ -53,5 +53,5 @@ public interface ExperimentStuTestMapper extends BaseMapper<ExperimentStuTest> {
     @Insert(" insert into experiment_stu_test_latest(stuno, expno, experiment_stu_test_no)" +
             " value (#{stuno}, #{expno}, #{experiment_stu_test_no}) " +
             " on duplicate key update experiment_stu_test_no = #{experiment_stu_test_no} ")
-    boolean insertLatestTest(@Param("experiment_stu_test_no") Long experiment_stu_test_no, @Param("stuno") Long stuno, @Param("expno") Long expno);
+    boolean insertLatestTest(@Param("stuno") Long stuno, @Param("expno") Long expno, @Param("experiment_stu_test_no") Long experiment_stu_test_no);
 }

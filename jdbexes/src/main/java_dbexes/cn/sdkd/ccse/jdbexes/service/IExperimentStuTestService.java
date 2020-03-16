@@ -20,4 +20,6 @@ public interface IExperimentStuTestService extends IService<ExperimentStuTest> {
     ExperimentStuTest findLatestByUserExperiment(Long stuno, Long expno);
 
     List<ExperimentStuTest> findLatestByExpno(Long expno);
+
+    boolean insertLatestTest(Long stuno, Long expno, Long experiment_stu_test_no);
 }

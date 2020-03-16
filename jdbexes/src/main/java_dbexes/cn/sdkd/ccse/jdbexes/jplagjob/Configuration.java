@@ -1,4 +1,4 @@
-package cn.sdkd.ccse.jdbexes.service.impl.jplag;
+package cn.sdkd.ccse.jdbexes.jplagjob;
 
 public abstract class Configuration {
     public static final float SIM_THRESHOLD = 90f;     // 大于该数值被认定抄袭

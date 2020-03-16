@@ -1,5 +1,8 @@
-package cn.sdkd.ccse.jdbexes.service.impl.jplag;
+package cn.sdkd.ccse.jdbexes.service.impl;
 
+import cn.sdkd.ccse.jdbexes.jplagjob.Configuration;
+import cn.sdkd.ccse.jdbexes.jplagjob.JPlagJob;
+import cn.sdkd.ccse.jdbexes.jplagjob.SubmissionKey;
 import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStu;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStuTest;
@@ -38,9 +41,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static cn.sdkd.ccse.jdbexes.service.impl.jplag.Configuration.SIM_THRESHOLD;
+import static cn.sdkd.ccse.jdbexes.jplagjob.Configuration.SIM_THRESHOLD;
 
-@Service("JPlagService")
+@Service
 public class JPlagServiceImpl implements IJPlagService {
     private static final Logger logger = LoggerFactory.getLogger(JPlagServiceImpl.class);
     int poolSize;
@@ -258,7 +261,7 @@ public class JPlagServiceImpl implements IJPlagService {
     private void submitJPlagJob(Submission submission, Long stuno, Long expno) {
         JPlagJob jPlagJob = new JPlagJob(this, submission,
                 stuno, expno,
-                this.experimentStuService,
+                this.experimentStuService, this.experimentStuTestService,
                 this.assignmentRepository, this.similarityRepository,
                 this.studentRepository, this.experimentRepository
         );

@@ -1,9 +1,9 @@
-package cn.sdkd.ccse.jdbexes.service.impl.jplag;
+package cn.sdkd.ccse.jdbexes.jplagjob;
 
 /**
  * 用于生成 JPlag Submission 名称
  */
-class SubmissionKey {
+public class SubmissionKey {
     String tsno;
     String tsname;
     Long experiment_stu_test_no;
@@ -20,7 +20,7 @@ class SubmissionKey {
         this.experiment_stu_test_no = experiment_stu_test_no.longValue();
     }
 
-    static SubmissionKey valueOf(String key) throws IllegalArgumentException {
+    public static SubmissionKey valueOf(String key) throws IllegalArgumentException {
         try {
             String[] keys = key.split("_");
             String tsno = keys[0];
@@ -30,6 +30,18 @@ class SubmissionKey {
         } catch (Exception e) {
             throw new IllegalArgumentException("错误的Submission" + key);
         }
+    }
+
+    public String getTsno() {
+        return tsno;
+    }
+
+    public String getTsname() {
+        return tsname;
+    }
+
+    public Long getExperiment_stu_test_no() {
+        return experiment_stu_test_no;
     }
 
     @Override
