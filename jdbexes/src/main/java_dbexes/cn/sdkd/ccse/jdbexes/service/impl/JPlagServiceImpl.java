@@ -109,7 +109,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Override
     public ConcurrentHashMap<Long, Submission> getSubmission(Long expno) {
-        return submissions.get(expno);
+        return submissions.getOrDefault(expno, new ConcurrentHashMap<>());
     }
 
     @Override
