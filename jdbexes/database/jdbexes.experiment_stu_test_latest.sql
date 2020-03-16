@@ -13,3 +13,11 @@ CREATE TABLE `experiment_stu_test_latest`
     ENGINE = InnoDB
     DEFAULT CHARSET = utf8
     comment '保存最新测试的编号';
+
+-- 更新为所有用户最新测试
+INSERT INTO experiment_stu_test_latest(stuno, expno, experiment_stu_test_no)
+SELECT stuno, expno, max(experiment_stu_test_no) as experiment_stu_test_no
+FROM experiment_stu_test
+GROUP BY stuno, expno
+ON DUPLICATE KEY UPDATE experiment_stu_test_no=experiment_stu_test_no;
+;

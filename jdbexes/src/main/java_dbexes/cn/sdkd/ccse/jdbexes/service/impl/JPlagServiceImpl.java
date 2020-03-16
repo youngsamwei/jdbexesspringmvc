@@ -18,6 +18,7 @@ import com.wangzhixuan.model.User;
 import com.wangzhixuan.service.IUserService;
 import jplag.*;
 import jplag.options.CommandLineOptions;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,7 +209,15 @@ public class JPlagServiceImpl implements IJPlagService {
             String loginName = user.getLoginName();
             String name = user.getName();
 
-            Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no);
+            String path = getTestFilePath(expno, loginName, name);
+            if (!new File(path).exists()) {
+                try {
+                    generateTestFiles(experiment_stu_test_no, path);
+                } catch (IOException e) {
+                    logger.warn(e.toString());
+                }
+            }
+            Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no, path);
             if (parseSubmission(test, submission)) {
                 putSubmission(stuno, expno, submission);
             }
@@ -229,15 +238,16 @@ public class JPlagServiceImpl implements IJPlagService {
 
         logger.info("正在处理作业: (用户: " + loginName + "-" + name + ", 实验编号: " + expno + ").");
 
+        String path = getTestFilePath(expno, loginName, name);
         // 1. 产生临时文件
         try {
-            generateTestFiles(experiment_stu_test_no, getTestFilePath(expno, loginName, name));
+            generateTestFiles(experiment_stu_test_no, path);
         } catch (Exception e) {
             logger.error(e.toString());
             experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, e.getClass().getName());
         }
         // 2. 创建 Submission
-        Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no);
+        Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no, path);
         // 3. 解析错误则不创建任务
         if (!parseSubmission(test, submission)) {
             logger.info("解析错误 (用户: + (用户: \" + loginName + \"-\" + name + \", 实验编号: \" + expno + \").");
@@ -324,8 +334,7 @@ public class JPlagServiceImpl implements IJPlagService {
      * @param experiment_stu_test_no 测试编号
      * @return Submission
      */
-    private Submission generateSubmission(Long expno, String loginName, String name, Long experiment_stu_test_no) {
-        String path = getTestFilePath(expno, loginName, name);
+    private Submission generateSubmission(Long expno, String loginName, String name, Long experiment_stu_test_no, String path) {
         SubmissionKey submissionKey = new SubmissionKey(loginName, name, experiment_stu_test_no);
         Program program = programMap.get(expno);
         return new Submission(submissionKey.toString(), new File(path), false, program, program.get_language());
