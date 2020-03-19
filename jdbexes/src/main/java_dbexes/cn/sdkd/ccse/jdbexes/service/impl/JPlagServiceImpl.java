@@ -203,6 +203,10 @@ public class JPlagServiceImpl implements IJPlagService {
     private void restoreSubmissions(Long expno) {
         List<ExperimentStuTest> tests = experimentStuTestService.findLatestByExpno(expno);
         for (ExperimentStuTest test : tests) {
+            if (test.getTeststatus() != null && test.getTeststatus() == 1) {
+                // 跳过先前解析不成功的
+                continue;
+            }
             long stuno = test.getStuno().longValue();
             long experiment_stu_test_no = test.getExperiment_stu_test_no().longValue();
             User user = userService.selectById(stuno);
@@ -220,6 +224,9 @@ public class JPlagServiceImpl implements IJPlagService {
             Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no, path);
             if (parseSubmission(test, submission)) {
                 putSubmission(stuno, expno, submission);
+            } else {
+                test.setTeststatus(1);
+                experimentStuTestService.updateById(test);
             }
         }
     }
