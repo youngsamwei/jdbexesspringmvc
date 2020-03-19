@@ -119,6 +119,8 @@ public class CheckJob implements Runnable {
         // Stop and remove container
         dockerClient.killContainerCmd(container.getId()).exec();
         dockerClient.removeContainerCmd(container.getId()).exec();
+
+        logger.info("Test for (" + sno + ", " + sname + ") Finished.");
     }
 
 
@@ -206,7 +208,7 @@ public class CheckJob implements Runnable {
                 container.getId())
                 .withAttachStdout(true)
                 .withAttachStderr(true)
-                .withCmd("/workspace/bin/exp_01_03_select_test")
+                .withCmd("/workspace/bin/" + target)
                 .exec();
         OutputStream out = new ByteArrayOutputStream();
         try {
