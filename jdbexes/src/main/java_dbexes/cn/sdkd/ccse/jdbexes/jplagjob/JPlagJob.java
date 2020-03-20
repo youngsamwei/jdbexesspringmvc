@@ -124,7 +124,6 @@ public class JPlagJob implements Runnable {
 
         // 相似度检查结果
         Map<SubmissionKey, Float> simResultMap = jPlagService.compareSubmission(expno, stuno, submission);
-
         // 刷新 Submission 列表
         jPlagService.putSubmission(stuno, expno, submission);
 

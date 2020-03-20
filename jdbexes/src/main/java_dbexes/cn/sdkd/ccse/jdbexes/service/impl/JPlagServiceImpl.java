@@ -38,10 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static cn.sdkd.ccse.jdbexes.jplagjob.Config.SIM_THRESHOLD;
@@ -77,9 +74,9 @@ public class JPlagServiceImpl implements IJPlagService {
     private IExperimentRepository experimentRepository;
     private String submitFilesRootDir;
 
-    private Map<Long, GSTiling> gsTilingMap;
-    private Map<Long, Program> programMap;
-    private ConcurrentHashMap<Long, ConcurrentHashMap<Long, Submission>> submissions; // <实验编号, <学生编号，作业>>
+    private ConcurrentMap<Long, GSTiling> gsTilingMap;
+    private ConcurrentMap<Long, Program> programMap;
+    private ConcurrentMap<Long, ConcurrentMap<Long, Submission>> submissions; // <实验编号, <学生编号，作业>>
 
     public JPlagServiceImpl() throws IOException {
         Properties props = PropertiesLoaderUtils.loadProperties(new ClassPathResource("/config/checkmission.properties"));
@@ -98,7 +95,8 @@ public class JPlagServiceImpl implements IJPlagService {
     @Override
     public Map<SubmissionKey, Float> compareSubmission(Long expno, Long stuno, Submission submission) {
         Map<SubmissionKey, Float> simResultMap = new HashMap<>();
-        for (Map.Entry<Long, Submission> entry : submissions.get(expno).entrySet()) {
+        ConcurrentMap<Long, Submission> expSubmissions = submissions.getOrDefault(expno, new ConcurrentHashMap<>());
+        for (Map.Entry<Long, Submission> entry : expSubmissions.entrySet()) {
             Submission submissionB = entry.getValue();
             SubmissionKey key = SubmissionKey.valueOf(submissionB.name);
 
@@ -156,7 +154,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
     @Override
     public void putSubmission(Long stuno, Long expno, Submission submission) {
-        ConcurrentHashMap<Long, Submission> expSubmissions = submissions.computeIfAbsent(expno, v -> new ConcurrentHashMap<>());
+        ConcurrentMap<Long, Submission> expSubmissions = submissions.computeIfAbsent(expno, v -> new ConcurrentHashMap<>());
         expSubmissions.put(stuno, submission);
     }
 
@@ -181,7 +179,8 @@ public class JPlagServiceImpl implements IJPlagService {
     }
 
     @Override
-    public boolean parseSubmission(Long stuno, Long expno, Submission submission) throws ExitException {
+    public synchronized boolean parseSubmission(Long stuno, Long expno, Submission submission) throws ExitException {
+        // Todo：一个实验一个锁
         submission.parse();
         if (submission.errors || submission.struct == null) {
             experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, Config.SIM_DESC_SYNAX_ERR);
@@ -199,34 +198,31 @@ public class JPlagServiceImpl implements IJPlagService {
     }
 
     @Override
-    public Submission generateSubmission(Long expno, SubmissionKey submissionKey, String path) throws ExitException {
+    public Submission generateSubmission(Long expno, SubmissionKey submissionKey, String path) {
         Program program = getProgram(expno);
         return new Submission(submissionKey.toString(), new File(path), false, program, program.get_language());
     }
 
     @Override
-    public GSTiling getGSTiling(Long expno) throws ExitException {
-        GSTiling gsTiling = gsTilingMap.get(expno);
-        if (gsTiling == null) {
-            gsTiling = new GSTiling(getProgram(expno));
-            gsTilingMap.put(expno, gsTiling);
-        }
-        return gsTiling;
+    public GSTiling getGSTiling(Long expno) {
+        return gsTilingMap.computeIfAbsent(expno, x->new GSTiling(getProgram(expno)));
     }
 
     @Override
-    public Program getProgram(Long expno) throws ExitException {
-        Program program = programMap.get(expno);
-        if (program == null) {
+    public Program getProgram(Long expno) {
+        return programMap.computeIfAbsent(expno, x->
+        {
             String[] paras = {
                     "-l", "c/c++",
                     "-s", submitFilesRootDir + expno,
                     "-clustertype", "min"
             };
-            program = new Program(new CommandLineOptions(paras, null));
-            programMap.put(expno, program);
-        }
-        return program;
+            try {
+                return new Program(new CommandLineOptions(paras, null));
+            } catch (ExitException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     ExperimentStuTest generateTest(Long stuno, Long expno) {
@@ -288,7 +284,7 @@ public class JPlagServiceImpl implements IJPlagService {
             initOneTest(est);
         }
 
-        for (Map.Entry<Long, ConcurrentHashMap<Long, Submission>> entry : this.submissions.entrySet()) {
+        for (Map.Entry<Long, ConcurrentMap<Long, Submission>> entry : this.submissions.entrySet()) {
             logger.info("* 实验" + entry.getKey() + ": " + entry.getValue().size() + "份.");
         }
     }
