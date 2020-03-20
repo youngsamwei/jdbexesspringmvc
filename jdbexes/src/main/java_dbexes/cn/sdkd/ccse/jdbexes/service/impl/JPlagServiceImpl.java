@@ -18,7 +18,6 @@ import com.wangzhixuan.model.User;
 import com.wangzhixuan.service.IUserService;
 import jplag.*;
 import jplag.options.CommandLineOptions;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +34,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -96,21 +96,16 @@ public class JPlagServiceImpl implements IJPlagService {
     }
 
     @Override
-    public float compareSubmission(Long expno, Submission a, Submission b) {
-        AllMatches match;
-        try {
-            match = this.gsTilingMap.get(expno).compare(a, b);
-            return match.percent();
-        } catch (Exception e) {
-            logger.error(e.toString());
+    public Map<SubmissionKey, Float> compareSubmission(Long expno, Long stuno, Submission submission) {
+        Map<SubmissionKey, Float> simResultMap = new HashMap<>();
+        for (Map.Entry<Long, Submission> entry : submissions.get(expno).entrySet()) {
+            Submission submissionB = entry.getValue();
+            SubmissionKey key = SubmissionKey.valueOf(submissionB.name);
+
+            float sim = compareSubmission(expno, submission, submissionB);
+            simResultMap.put(key, sim);
         }
-
-        return -1;
-    }
-
-    @Override
-    public ConcurrentHashMap<Long, Submission> getSubmission(Long expno) {
-        return submissions.getOrDefault(expno, new ConcurrentHashMap<>());
+        return simResultMap;
     }
 
     @Override
@@ -165,109 +160,11 @@ public class JPlagServiceImpl implements IJPlagService {
         expSubmissions.put(stuno, submission);
     }
 
-    // region 恢复提交列表
-
-    @PostConstruct
-    private void initSubmissions() throws ExitException {
-
-        logger.info("恢复提交列表");
-        List<Long> experiments = experimentService.selectAll().stream().map(Experiment::getExpno).collect(Collectors.toList());
-        for (Long expno : experiments) {
-            initJplagProgram(expno);
-            restoreSubmissions(expno);
-        }
-
-        logger.info("处理未计算相似度的作业");
-        List<ExperimentStuTest> lest = experimentStuTestService.selectListUnCompare();
-        for (ExperimentStuTest est : lest) {
-            initOneTest(est);
-        }
-
-        for (Map.Entry<Long, ConcurrentHashMap<Long, Submission>> entry : this.submissions.entrySet()) {
-            logger.info("* 实验" + entry.getKey() + ": " + entry.getValue().size() + "份.");
-        }
-    }
-
-    private void initJplagProgram(Long expno) throws ExitException {
-        String[] paras = {
-                "-l", "c/c++",
-                "-s", submitFilesRootDir + expno,
-                "-clustertype", "min"
-        };
-        Program program = new Program(new CommandLineOptions(paras, null));
-        GSTiling gsTiling = new GSTiling(program);
-        programMap.put(expno, program);
-        gsTilingMap.put(expno, gsTiling);
-    }
-
-    private void restoreSubmissions(Long expno) {
-        List<ExperimentStuTest> tests = experimentStuTestService.findLatestByExpno(expno);
-        for (ExperimentStuTest test : tests) {
-            if (test.getTeststatus() != null && test.getTeststatus() == 1) {
-                // 跳过先前解析不成功的
-                continue;
-            }
-            long stuno = test.getStuno().longValue();
-            long experiment_stu_test_no = test.getExperiment_stu_test_no().longValue();
-            User user = userService.selectById(stuno);
-            String loginName = user.getLoginName();
-            String name = user.getName();
-
-            String path = getTestFilePath(expno, loginName, name);
-            if (!new File(path).exists()) {
-                try {
-                    generateTestFiles(experiment_stu_test_no, path);
-                } catch (IOException e) {
-                    logger.warn(e.toString());
-                }
-            }
-            Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no, path);
-            if (parseSubmission(test, submission)) {
-                putSubmission(stuno, expno, submission);
-            } else {
-                test.setTeststatus(1);
-                experimentStuTestService.updateById(test);
-            }
-        }
-    }
-
-    // endregion
-
-    // region 初始化相似度检查并提交
-
-    private void initOneTest(ExperimentStuTest test) {
-        long expno = test.getExpno().longValue();
-        long stuno = test.getStuno().longValue();
-        long experiment_stu_test_no = test.getExperiment_stu_test_no().longValue();
-        User user = userService.selectById(stuno);
-        String loginName = user.getLoginName();
-        String name = user.getName();
-
-        logger.info("正在处理作业: (用户: " + loginName + "-" + name + ", 实验编号: " + expno + ").");
-
-        String path = getTestFilePath(expno, loginName, name);
-        // 1. 产生临时文件
-        try {
-            generateTestFiles(experiment_stu_test_no, path);
-        } catch (Exception e) {
-            logger.error(e.toString());
-            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, e.getClass().getName());
-        }
-        // 2. 创建 Submission
-        Submission submission = generateSubmission(expno, loginName, name, experiment_stu_test_no, path);
-        // 3. 解析错误则不创建任务
-        if (!parseSubmission(test, submission)) {
-            logger.info("解析错误 (用户: + (用户: \" + loginName + \"-\" + name + \", 实验编号: \" + expno + \").");
-            return;
-        }
-        // 4. 否则，创建并提交相似度比较任务
-        submitJPlagJob(submission, stuno, expno);
-    }
-
     /**
      * 将数据库中保存的文件写入指定文件夹
      */
-    private void generateTestFiles(Long experiment_stu_test_no, String dir) throws IOException {
+    @Override
+    public void generateTestFiles(Long experiment_stu_test_no, String dir) throws IOException {
         logger.debug("write " + dir);
         Files.createDirectories(Paths.get(dir));
         List<ExperimentStuTestFiles> estfList = experimentStuTestFilesService.selectListByTestno(experiment_stu_test_no);
@@ -283,35 +180,54 @@ public class JPlagServiceImpl implements IJPlagService {
         }
     }
 
-    /**
-     * 提交相似度比较任务 jPlagJob
-     */
-    private void submitJPlagJob(Submission submission, Long stuno, Long expno) {
-        JPlagJob jPlagJob = new JPlagJob(this, submission,
-                stuno, expno,
-                this.experimentStuService, this.experimentStuTestService,
-                this.assignmentRepository, this.similarityRepository,
-                this.studentRepository, this.experimentRepository
-        );
-        threadPoolExecutor.execute(jPlagJob);
-    }
-
-    private boolean parseSubmission(ExperimentStuTest test, Submission submission) {
-        try {
-            submission.parse();
-            if (submission.errors || submission.struct == null) {
-                experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), Config.SIM_STATUS_FAILED, Config.SIM_DESC_SYNAX_ERR);
-                return false;
-            }
-        } catch (ExitException e) {
-            experimentStuService.updateSimStatus(test.getStuno().longValue(), test.getExpno().longValue(), Config.SIM_STATUS_FAILED, Config.SIM_DESC_PARSER_ERR);
-            logger.error(e.toString());
+    @Override
+    public boolean parseSubmission(Long stuno, Long expno, Submission submission) throws ExitException {
+        submission.parse();
+        if (submission.errors || submission.struct == null) {
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, Config.SIM_DESC_SYNAX_ERR);
             return false;
         }
         return true;
     }
 
-    // endregion
+    @Override
+    public String getTestFilePath(Long expno, SubmissionKey key) {
+        return FilenameUtils.concat(
+                FilenameUtils.concat(submitFilesRootDir, expno.toString()),
+                key.toString()
+        );
+    }
+
+    @Override
+    public Submission generateSubmission(Long expno, SubmissionKey submissionKey, String path) throws ExitException {
+        Program program = getProgram(expno);
+        return new Submission(submissionKey.toString(), new File(path), false, program, program.get_language());
+    }
+
+    @Override
+    public GSTiling getGSTiling(Long expno) throws ExitException {
+        GSTiling gsTiling = gsTilingMap.get(expno);
+        if (gsTiling == null) {
+            gsTiling = new GSTiling(getProgram(expno));
+            gsTilingMap.put(expno, gsTiling);
+        }
+        return gsTiling;
+    }
+
+    @Override
+    public Program getProgram(Long expno) throws ExitException {
+        Program program = programMap.get(expno);
+        if (program == null) {
+            String[] paras = {
+                    "-l", "c/c++",
+                    "-s", submitFilesRootDir + expno,
+                    "-clustertype", "min"
+            };
+            program = new Program(new CommandLineOptions(paras, null));
+            programMap.put(expno, program);
+        }
+        return program;
+    }
 
     ExperimentStuTest generateTest(Long stuno, Long expno) {
         // 创建一次测试
@@ -325,26 +241,14 @@ public class JPlagServiceImpl implements IJPlagService {
         return test;
     }
 
-    private String getTestFilePath(Long expno, String loginName, String name) {
-        return FilenameUtils.concat(
-                FilenameUtils.concat(submitFilesRootDir, expno.toString()),
-                loginName + '_' + name
-        );
-    }
+    private SubmissionKey generateSubmissionKey(ExperimentStuTest test) {
+        long stuno = test.getStuno().longValue();
+        long experiment_stu_test_no = test.getExperiment_stu_test_no().longValue();
+        User user = userService.selectById(stuno);
+        String loginName = user.getLoginName();
+        String name = user.getName();
 
-    /**
-     * 生成 Submission
-     *
-     * @param expno                  实验编号
-     * @param loginName              登录名
-     * @param name                   用户姓名
-     * @param experiment_stu_test_no 测试编号
-     * @return Submission
-     */
-    private Submission generateSubmission(Long expno, String loginName, String name, Long experiment_stu_test_no, String path) {
-        SubmissionKey submissionKey = new SubmissionKey(loginName, name, experiment_stu_test_no);
-        Program program = programMap.get(expno);
-        return new Submission(submissionKey.toString(), new File(path), false, program, program.get_language());
+        return new SubmissionKey(loginName, name, experiment_stu_test_no);
     }
 
     /**
@@ -356,6 +260,88 @@ public class JPlagServiceImpl implements IJPlagService {
     private void createStudentAndExperimentOnNeo4JIfNotExists(Long stuno, Long expno) {
         neo4jService.createStudentIfNotExists(userService.selectById(stuno));
         neo4jService.createExperimentIfNotExists(experimentService.selectById(expno));
+    }
+
+    private float compareSubmission(Long expno, Submission a, Submission b) {
+        try {
+            GSTiling gsTiling = getGSTiling(expno);
+            AllMatches match = gsTiling.compare(a, b);
+            return match.percent();
+        } catch (Exception e) {
+            logger.error("比较失败(" + a.name + ", " + b.name + ")\n" + a.structSize + ", " + b.structSize, e);
+        }
+        return -1;
+    }
+
+    @PostConstruct
+    private void initSubmissions() {
+
+        logger.info("恢复提交列表");
+        List<Long> experiments = experimentService.selectAll().stream().map(Experiment::getExpno).collect(Collectors.toList());
+        for (Long expno : experiments) {
+            restoreSubmissions(expno);
+        }
+
+        logger.info("处理未计算相似度的作业");
+        List<ExperimentStuTest> lest = experimentStuTestService.selectListUnCompare();
+        for (ExperimentStuTest est : lest) {
+            initOneTest(est);
+        }
+
+        for (Map.Entry<Long, ConcurrentHashMap<Long, Submission>> entry : this.submissions.entrySet()) {
+            logger.info("* 实验" + entry.getKey() + ": " + entry.getValue().size() + "份.");
+        }
+    }
+
+    private void restoreSubmissions(Long expno) {
+        List<ExperimentStuTest> tests = experimentStuTestService.findLatestByExpno(expno);
+        for (ExperimentStuTest test : tests) {
+            if (test.getTeststatus() != null && test.getTeststatus() == 1) {
+                // 跳过先前解析不成功的
+                continue;
+            }
+            SubmissionKey submissionKey = generateSubmissionKey(test);
+
+            String path = getTestFilePath(expno, submissionKey);
+
+            try {
+                // 1. 生成文件
+                if (!new File(path).exists()) {
+                    generateTestFiles(submissionKey.getExperiment_stu_test_no(), path);
+                }
+                // 2. 创建提交
+                Submission submission = generateSubmission(expno, submissionKey, path);
+                // 3. 尝试解析，失败则标记 teststatus 为 1
+                if (parseSubmission(test.getStuno().longValue(), test.getExpno().longValue(), submission)) {
+                    putSubmission(test.getStuno().longValue(), expno, submission);
+                } else {
+                    test.setTeststatus(1);
+                    experimentStuTestService.updateById(test);
+                }
+            } catch (Exception e) {
+                if (e.getClass() == ExitException.class) {
+                    return; // ignore
+                }
+                logger.warn("恢复提交失败 " + submissionKey, e);
+            }
+        }
+    }
+
+    private void initOneTest(ExperimentStuTest test) {
+        long expno = test.getExpno().longValue();
+        long stuno = test.getStuno().longValue();
+        long experiment_stu_test_no = test.getExperiment_stu_test_no().longValue();
+        User user = userService.selectById(stuno);
+        String loginName = user.getLoginName();
+        String name = user.getName();
+
+        SubmissionKey submissionKey = new SubmissionKey(loginName, name, experiment_stu_test_no);
+        JPlagJob jPlagJob = new JPlagJob(this, submissionKey, stuno, expno,
+                this.experimentStuService, this.experimentStuTestService,
+                this.assignmentRepository, this.similarityRepository,
+                this.studentRepository, this.experimentRepository
+        );
+        threadPoolExecutor.execute(jPlagJob);
     }
 
 }

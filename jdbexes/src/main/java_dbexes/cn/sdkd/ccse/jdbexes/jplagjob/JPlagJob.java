@@ -11,18 +11,18 @@ import cn.sdkd.ccse.jdbexes.neo4j.repositories.IStudentRepository;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuTestService;
 import cn.sdkd.ccse.jdbexes.service.IJPlagService;
+import jplag.ExitException;
 import jplag.Submission;
 import org.neo4j.ogm.annotation.typeconversion.DateString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import static cn.sdkd.ccse.jdbexes.jplagjob.Config.SIM_THRESHOLD;
-import static cn.sdkd.ccse.jdbexes.jplagjob.Config.SIM_THRESHOLD_SAME;
 
 /**
  * 相似度计算任务
@@ -43,15 +43,14 @@ public class JPlagJob implements Runnable {
 
     private Submission submission;
 
-    public JPlagJob(IJPlagService jPlagService, Submission submission, Long stuno, Long expno,
+    public JPlagJob(IJPlagService jPlagService, SubmissionKey submissionKey, Long stuno, Long expno,
                     IExperimentStuService experimentStuService, IExperimentStuTestService experimentStuTestService,
                     IAssignmentRepository assignmentRepository, ISimilarityRepository similarityRepository,
                     IStudentRepository studentRepository, IExperimentRepository experimentRepository) {
         this.jPlagService = jPlagService;
         this.stuno = stuno;
         this.expno = expno;
-        this.submission = submission;
-        this.submissionKey = SubmissionKey.valueOf(submission.name);
+        this.submissionKey = submissionKey;
         this.assignmentRepository = assignmentRepository;
         this.similarityRepository = similarityRepository;
         this.studentRepository = studentRepository;
@@ -62,105 +61,111 @@ public class JPlagJob implements Runnable {
 
     @Override
     public void run() {
-        logger.debug("Running similarity analysers for (用户: " + this.submissionKey.getTsno() + "-" + this.submissionKey.getTsname() + ", 实验编号: " + this.expno + ").");
+        logger.debug("Running similarity analysers for " + submissionKey + ".");
         experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_NOT_YET, Config.SIM_DESC_RUNNING);
 
-        boolean duplicate = false;
-        Long duplicateAssignmentId = null;
-        Map<SubmissionKey, Float> simResultMap = new HashMap<>();
-        if (assignmentAlreadyExists()) {
-            logger.warn("Assignmentid " + this.submissionKey.getExperiment_stu_test_no() + " 已经存在.");
-            duplicate = true;
-            duplicateAssignmentId = this.submissionKey.getExperiment_stu_test_no();
-        } else {
-            // 同一实验下的子提交
-            ConcurrentHashMap<Long, Submission> submissions = jPlagService.getSubmission(this.expno);
-
-            // 相似度检查结果
-            for (Map.Entry<Long, Submission> entry : submissions.entrySet()) {
-                Submission submission = entry.getValue();
-                if (submission.name.equalsIgnoreCase(this.submission.name)) {
-                    continue;
-                }
-                SubmissionKey key = SubmissionKey.valueOf(submission.name);
-                float sim = this.jPlagService.compareSubmission(this.expno, this.submission, submission);
-                simResultMap.put(key, sim);
-            }
-
-            // 如果与自己已有提交相似度接近 100%，则不创建新提交
-            Set<Long> userAssignments = assignmentRepository.findByStudentIdExpId(this.stuno, this.expno).stream().map(
-                    Assignment::getAssignmentid
-            ).collect(Collectors.toCollection(HashSet::new));
-
-            logger.debug("当前编号：" + this.submission.name);
-            logger.debug("已提交编号：" + Arrays.toString(userAssignments.toArray()));
-
-            for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
-                if (result.getValue() >= SIM_THRESHOLD_SAME && userAssignments.contains(result.getKey().getExperiment_stu_test_no())) {
-                    logger.debug("重复提交，不重新计算相似度");
-                    duplicate = true;
-                    duplicateAssignmentId = result.getKey().getExperiment_stu_test_no();
-                    break;
-                }
-            }
+        // 1. 产生临时文件
+        String path = jPlagService.getTestFilePath(expno, submissionKey);
+        try {
+            jPlagService.generateTestFiles(submissionKey.getExperiment_stu_test_no(), path);
+        } catch (Exception e) {
+            logger.error("无法生成临时文件 " + submissionKey, e);
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, e.getClass().getName());
         }
 
-        Assignment a1;
-        if (duplicate) {
-            // 若重复，仅刷新旧提交的结果
-            a1 = assignmentRepository.findByAssignmentid(duplicateAssignmentId);
-        } else {
-            // 刷新 Submission 列表
-            jPlagService.putSubmission(stuno, expno, submission);
-            // 将提交保存于 neo4j，并创建联系
-            a1 = generateAssignment();
-            // 更新用户最新实验
-            experimentStuTestService.insertLatestTest(stuno, expno, a1.getAssignmentid());
-            // 在 Neo4J 中创建边
-            for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
-                if (result.getValue() >= SIM_THRESHOLD) {
-                    createEdgeIfNotExist(this.submissionKey, result.getKey(), result.getValue());
-                }
-            }
+        // 2. 创建 Submission
+        try {
+            submission = jPlagService.generateSubmission(expno, submissionKey, path);
+        } catch (ExitException e) {
+            logger.warn("无法创建 Submission " + submissionKey);
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, e.getClass().toString());
+            return;
         }
 
-        // 获取相似度比较结果，写入数据库
-        updateSimStatus(a1);
+        // 3. 解析错误则跳过
+        try {
+            if (!jPlagService.parseSubmission(stuno, expno, submission)) {
+                logger.debug("语法错误 " + submissionKey);
+                experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, Config.SIM_DESC_SYNAX_ERR);
+                return;
+            }
+        } catch (ExitException e) {
+            logger.warn("解析失败 Submission " + submissionKey);
+            logger.warn("解析失败 Submission (用户: " + submissionKey.getTsno() + "-" + submissionKey.getTsname() + ", 实验编号: " + expno + ").");
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, Config.SIM_DESC_PARSER_ERR);
+            return;
+        }
 
-        logger.debug("simcheck end");
+        // 4. 进行相似度比较
+        Assignment assignment;
+        try {
+            assignment = doCompare();
+        } catch (IllegalStateException e) {
+            logger.warn("Assignmentid " + submissionKey.getExperiment_stu_test_no() + " 已经存在.");
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_FAILED, "Internal Error");
+            return;
+        }
+
+        // 5. 更新相似度比较结果，写入数据库
+        int number = getSimStatus(assignment);
+        if (number > 0) {
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_PLAGIARISM, Config.getSimDesc(number, SIM_THRESHOLD));
+        } else {
+            experimentStuService.updateSimStatus(stuno, expno, Config.SIM_STATUS_NORMAL, Config.SIM_DESC_NORMAL);
+        }
+
+        logger.debug("Similarity analyser for " + submissionKey + " finished.");
     }
 
-    /**
-     * 获取相似度比较结果，写入数据库
-     * @param assignment 提交
-     */
-    private void updateSimStatus(Assignment assignment) {
-        List<Student> lss = this.studentRepository.findBySimValueAssignmentid(SIM_THRESHOLD, assignment.getId());
-
-        // 若相似度超过阈值的学生个数大于0，则状态是3，否则状态是0
-        if (lss.size() > 0) {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, Config.SIM_STATUS_PLAGIARISM, Config.getSimDesc(lss.size(), SIM_THRESHOLD));
-        } else {
-            experimentStuService.updateSimStatus(this.stuno, this.expno, Config.SIM_STATUS_NORMAL, Config.SIM_DESC_NORMAL);
+    private Assignment doCompare() throws IllegalStateException {
+        if (assignmentAlreadyExists()) {
+            throw new IllegalStateException();
         }
+
+        // 相似度检查结果
+        Map<SubmissionKey, Float> simResultMap = jPlagService.compareSubmission(expno, stuno, submission);
+
+        // 刷新 Submission 列表
+        jPlagService.putSubmission(stuno, expno, submission);
+
+        // 更新用户最新实验
+        experimentStuTestService.insertLatestTest(stuno, expno, submissionKey.getExperiment_stu_test_no());
+
+        // 将提交保存于 neo4j
+        Assignment assignment = generateAssignment();
+
+        // 在 Neo4J 中创建边
+        for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
+            if (result.getValue() >= SIM_THRESHOLD) {
+                createEdgeIfNotExist(submissionKey, result.getKey(), result.getValue());
+            }
+        }
+
+        return assignment;
+    }
+
+    private int getSimStatus(Assignment assignment) {
+        List<Student> students = studentRepository.findBySimValueAssignmentid(SIM_THRESHOLD, assignment.getId());
+        return students.size();
     }
 
     /**
      * 若不存在已有联系则创建
+     *
      * @param key1 提交1
      * @param key2 提交2
      * @param sim  相似度
      */
     private void createEdgeIfNotExist(SubmissionKey key1, SubmissionKey key2, float sim) {
         // 存在则返回
-        List<Similarity> sims = this.similarityRepository.findSimilarityBy2ExperimentStuTestNo(
+        List<Similarity> sims = similarityRepository.findSimilarityBy2ExperimentStuTestNo(
                 key1.getExperiment_stu_test_no(), key2.getExperiment_stu_test_no());
         if (!sims.isEmpty()) {
             return;
         }
 
-        Assignment a1 = this.assignmentRepository.findByAssignmentid(key1.getExperiment_stu_test_no());
-        Assignment a2 = this.assignmentRepository.findByAssignmentid(key2.getExperiment_stu_test_no());
+        Assignment a1 = assignmentRepository.findByAssignmentid(key1.getExperiment_stu_test_no());
+        Assignment a2 = assignmentRepository.findByAssignmentid(key2.getExperiment_stu_test_no());
         if (a1 == null || a2 == null) {
             return;
         }
@@ -185,19 +190,19 @@ public class JPlagJob implements Runnable {
      */
     private Assignment generateAssignment() throws NullPointerException {
         Assignment a1 = new Assignment();
-        a1.setAssignmentid(this.submissionKey.getExperiment_stu_test_no());
+        a1.setAssignmentid(submissionKey.getExperiment_stu_test_no());
         a1.setSubmitDate(new Date());
-        a1 = this.assignmentRepository.save(a1);
-        Student s = studentRepository.findByStudentid(this.stuno);
-        Experiment e = experimentRepository.findByExperimentid(this.expno);
+        a1 = assignmentRepository.save(a1);
+        Student s = studentRepository.findByStudentid(stuno);
+        Experiment e = experimentRepository.findByExperimentid(expno);
 
-        this.assignmentRepository.createSubmitRelationship(s.getId(), a1.getId());
-        this.assignmentRepository.createBelongtoRelationship(e.getId(), a1.getId());
+        assignmentRepository.createSubmitRelationship(s.getId(), a1.getId());
+        assignmentRepository.createBelongtoRelationship(e.getId(), a1.getId());
         return a1;
     }
 
     private boolean assignmentAlreadyExists() {
-        Assignment a1 = this.assignmentRepository.findByAssignmentid(this.submissionKey.getExperiment_stu_test_no());
+        Assignment a1 = assignmentRepository.findByAssignmentid(submissionKey.getExperiment_stu_test_no());
         return a1 != null;
     }
 

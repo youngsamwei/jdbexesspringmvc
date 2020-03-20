@@ -1,20 +1,20 @@
 package cn.sdkd.ccse.jdbexes.service;
 
+import cn.sdkd.ccse.jdbexes.jplagjob.SubmissionKey;
+import jplag.ExitException;
+import jplag.GSTiling;
+import jplag.Program;
 import jplag.Submission;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * Created by sam on 2019/1/7.
  */
 public interface IJPlagService {
 
-    float compareSubmission(Long expno, Submission a, Submission b);
-
-    /**
-     * 获得实验编号 expno 对应的 submission 列表
-     */
-    ConcurrentHashMap<Long, Submission> getSubmission(Long expno);
+    Map<SubmissionKey, Float> compareSubmission(Long expno, Long stuno, Submission submission);
 
     void monitorJob();
 
@@ -30,4 +30,16 @@ public interface IJPlagService {
     void refreshSimStatus(Long stuno, Long expno);
 
     void putSubmission(Long stuno, Long expno, Submission submission);
+
+    void generateTestFiles(Long experiment_stu_test_no, String dir) throws IOException;
+
+    boolean parseSubmission(Long stuno, Long expno, Submission submission) throws ExitException;
+
+    String getTestFilePath(Long expno, SubmissionKey key);
+
+    Submission generateSubmission(Long expno, SubmissionKey submissionKey, String path) throws ExitException;
+
+    GSTiling getGSTiling(Long expno) throws ExitException;
+
+    Program getProgram(Long expno) throws ExitException;
 }
