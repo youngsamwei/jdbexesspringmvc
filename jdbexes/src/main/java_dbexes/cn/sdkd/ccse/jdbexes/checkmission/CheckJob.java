@@ -36,12 +36,13 @@ public class CheckJob implements Runnable {
     private String sname;
 
     private Integer timeout;
+    private Integer memory_limit;
 
     private IExperimentFilesStuService experimentFilesStuService;
     private IExperimentStuService experimentStuService;
 
     public CheckJob(String dockerHost, String image_name, Long stuno, Long expno, String sno, String sname, Integer timeout,
-                    IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService) {
+                    Integer memory_limit, IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService) {
 
         this.dockerClient = DockerClientBuilder.getInstance(dockerHost).build();
         this.image_name = image_name;
@@ -52,6 +53,7 @@ public class CheckJob implements Runnable {
         this.sname = sname;
 
         this.timeout = timeout;
+        this.memory_limit = memory_limit;
 
         this.experimentFilesStuService = experimentFilesStuService;
         this.experimentStuService = experimentStuService;
@@ -72,6 +74,8 @@ public class CheckJob implements Runnable {
                 .createContainerCmd(image_name)
                 .withStdinOpen(true)
                 .exec();
+
+        dockerClient.updateContainerCmd(container.getId()).withMemory(memory_limit.longValue()).exec();
 
         // Start container
         dockerClient.startContainerCmd(container.getId()).exec();

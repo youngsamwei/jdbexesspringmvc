@@ -62,10 +62,11 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
 
         String dockerHost = props.getProperty("docker.host");
         String image_name = props.getProperty("docker.image");
-        Integer timeout = Integer.parseInt(props.getProperty("timeout"));
+        Integer memory_limit = Integer.parseInt(props.getProperty("docker.memory_limit"));
+        Integer timeout = Integer.parseInt(props.getProperty("docker.timeout"));
 
         experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
-        CheckJob cj = new CheckJob(dockerHost, image_name, stuno, expno, sno, sname, timeout,
+        CheckJob cj = new CheckJob(dockerHost, image_name, stuno, expno, sno, sname, timeout, memory_limit,
                 experimentFilesStuService, experimentStuService);
 
         threadPoolExecutor.execute(cj);
