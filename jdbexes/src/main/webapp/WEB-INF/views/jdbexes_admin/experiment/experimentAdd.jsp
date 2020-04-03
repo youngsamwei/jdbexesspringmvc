@@ -50,10 +50,30 @@
                                data-options="required:true" value=""></td>
                 </tr>
                 <tr>
+                    <td><label for="experiment-add-form-docker-image">Docker 镜像</label></td>
+                    <td><input id="experiment-add-form-docker-image" name="docker_image" type="text"
+                               placeholder="要使用的 Docker 镜像"
+                               class="easyui-validatebox span2" style="width: 300px; height: 20px;"
+                               data-options="required:true" value=""></td>
+                </tr>
+                <tr>
                     <td><label for="experiment-add-form-testtarget">编译目标</label></td>
                     <td><input id="experiment-add-form-testtarget" name="testtarget" type="text" placeholder="请输入编译目标"
                                class="easyui-validatebox span2" style="width: 300px; height: 20px;"
                                data-options="required:true" value=""></td>
+                </tr>
+                <tr>
+                    <td><label for="experiment-add-form-memory-limit">内存限制(Mib)</label></td>
+                    <td><input id="experiment-add-form-memory-limit" name="memory_limit" type="number"
+                               placeholder="请输入内存限制"
+                               class="easyui-validatebox span2" style="width: 300px; height: 20px;"
+                               data-options="required:true" value="512"></td>
+                </tr>
+                <tr>
+                    <td><label for="experiment-add-form-timeout">超时时间(s)</label></td>
+                    <td><input id="experiment-add-form-timeout" name="timeout" type="number" placeholder="请输入超时时间"
+                               class="easyui-validatebox span2" style="width: 300px; height: 20px;"
+                               data-options="required:true" value="30"></td>
                 </tr>
                 <tr>
                     <td><label for="experiment-add-form-isOpen">状态</label></td>

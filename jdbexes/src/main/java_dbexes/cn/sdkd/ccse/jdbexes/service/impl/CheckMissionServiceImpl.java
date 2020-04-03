@@ -4,6 +4,7 @@ import cn.sdkd.ccse.jdbexes.checkmission.CheckJob;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
 import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
+import cn.sdkd.ccse.jdbexes.service.IExperimentService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
@@ -31,6 +32,7 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
     private final IExperimentFilesStuService experimentFilesStuService;
     private final IExperimentStuService experimentStuService;
     private final IUserService userService;
+    private final IExperimentService experimentService;
 
     ConcurrentLinkedQueue<String> projectDirQueue;
     ThreadPoolExecutor threadPoolExecutor;
@@ -39,10 +41,11 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
 
     public CheckMissionServiceImpl(IExperimentFilesStuService experimentFilesStuService,
                                    IExperimentStuService experimentStuService,
-                                   IUserService userService) throws IOException {
+                                   IUserService userService, IExperimentService experimentService) throws IOException {
         this.experimentFilesStuService = experimentFilesStuService;
         this.experimentStuService = experimentStuService;
         this.userService = userService;
+        this.experimentService = experimentService;
 
         props = PropertiesLoaderUtils.loadProperties(new ClassPathResource("/config/checkmission.properties"));
         int poolSize = Integer.parseInt(props.getProperty("poolSize"));
@@ -61,13 +64,10 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
         String sname = u.getName();
 
         String dockerHost = props.getProperty("docker.host");
-        String image_name = props.getProperty("docker.image");
-        Integer memory_limit = Integer.parseInt(props.getProperty("docker.memory_limit"));
-        Integer timeout = Integer.parseInt(props.getProperty("docker.timeout"));
 
         experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
-        CheckJob cj = new CheckJob(dockerHost, image_name, stuno, expno, sno, sname, timeout, memory_limit,
-                experimentFilesStuService, experimentStuService);
+        CheckJob cj = new CheckJob(dockerHost, stuno, expno, sno, sname,
+                experimentFilesStuService, experimentStuService, experimentService);
 
         threadPoolExecutor.execute(cj);
 

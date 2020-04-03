@@ -16,7 +16,7 @@ public interface ExperimentMapper extends BaseMapper<Experiment> {
 
     List<Map<String, Object>> unSelectedDataGrid(Pagination page, @Param("stuno")Long stuno);
 
-    @Select("select expno, expname, testtarget, is_open from experiment ")
+    @Select("select expno, expname, docker_image, testtarget, memory_limit, timeout, is_open from experiment ")
     List<Map<String, Object>> selectDataGrid(Pagination page);
 
     boolean refreshCache();

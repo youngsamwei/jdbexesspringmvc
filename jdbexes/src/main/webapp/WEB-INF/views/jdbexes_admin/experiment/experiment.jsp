@@ -18,19 +18,34 @@
                 pageSize: 20,
                 pageList: [10, 20, 30, 40, 50, 100, 200, 300, 400, 500],
                 frozenColumns: [[{
-                    width: '100',
+                    width: '50',
                     title: '编号',
                     field: 'expno',
                     sortable: true
                 }, {
-                    width: '400',
+                    width: '200',
                     title: '名称',
                     field: 'expname',
                     sortable: true
                 }, {
-                    width: '400',
+                    width: '200',
+                    title: 'Docker 镜像',
+                    field: 'docker_image',
+                    sortable: true
+                }, {
+                    width: '300',
                     title: '编译目标',
                     field: 'testtarget',
+                    sortable: true
+                },{
+                    width: '100',
+                    title: '内存限制(Mib)',
+                    field: 'memory_limit',
+                    sortable: true
+                },{
+                    width: '100',
+                    title: '超时时间(s)',
+                    field: 'timeout',
                     sortable: true
                 }, {
                     width: '60',
@@ -44,7 +59,7 @@
                     width: 200,
                     formatter: actionColFormatter
                 }]],
-                onLoadSuccess: function (data) {
+                onLoadSuccess: function (_) {
                     $('.experiment-easyui-linkbutton-edit').linkbutton({text: '编辑'});
                     $('.experiment-easyui-linkbutton-del').linkbutton({text: '删除'});
                 },
@@ -52,7 +67,7 @@
             });
         }
 
-        function isOpenColFormatter(value, row, index) {
+        function isOpenColFormatter(value, _, __) {
             switch (value) {
                 case 1:
                     return '正常';
@@ -61,7 +76,7 @@
             }
         }
 
-        function actionColFormatter(value, row, index) {
+        function actionColFormatter(value, row, _) {
             let str = '';
             <shiro:hasPermission name="/dbexp/edit">
             str += '&nbsp;&nbsp;|&nbsp;&nbsp;';

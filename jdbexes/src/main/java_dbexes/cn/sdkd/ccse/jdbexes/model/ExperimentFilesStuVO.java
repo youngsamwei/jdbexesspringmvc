@@ -19,7 +19,10 @@ public class ExperimentFilesStuVO {
     private String file_content;
     private Timestamp submittime;
 
+    private String docker_image;
     private String testtarget;
+    private Integer memory_limit;
+    private Integer timeout;
 
     public Integer getExpno() {
         return expno;
@@ -91,6 +94,30 @@ public class ExperimentFilesStuVO {
 
     public void setSubmittime(Timestamp submittime) {
         this.submittime = submittime;
+    }
+
+    public String getDocker_image() {
+        return docker_image;
+    }
+
+    public void setDocker_image(String docker_image) {
+        this.docker_image = docker_image;
+    }
+
+    public Integer getMemory_limit() {
+        return memory_limit;
+    }
+
+    public void setMemory_limit(Integer memoty_limit) {
+        this.memory_limit = memoty_limit;
+    }
+
+    public Integer getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(Integer timeout) {
+        this.timeout = timeout;
     }
 
     public String getTesttarget() {

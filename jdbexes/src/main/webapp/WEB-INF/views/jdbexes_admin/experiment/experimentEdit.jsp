@@ -39,7 +39,7 @@
         }
     }();
 
-
+    window.experimentEdit = experimentEdit;
 </script>
 
 <div class="easyui-layout" data-options="fit:true,border:false">
@@ -54,10 +54,29 @@
                                data-options="required:true" value="${experiment.expname}"></td>
                 </tr>
                 <tr>
+                    <td><label for="experiment-edit-form-docker-image">Docker 镜像</label></td>
+                    <td><input id="experiment-add-form-docker-image" name="docker_image" type="text" placeholder="要使用的 Docker 镜像"
+                               class="easyui-validatebox span2" style="width: 300px; height: 20px;"
+                               data-options="required:true" value=""></td>
+                </tr>
+                <tr>
                     <td><label for="experiment-edit-form-testtarget">编译目标</label></td>
                     <td><input id="experiment-edit-form-testtarget" name="testtarget" type="text" placeholder="请输入编译目标"
                                class="easyui-validatebox" style="width: 300px; height: 20px;"
                                data-options="required:true" value="${experiment.testtarget}"></td>
+                </tr>
+                <tr>
+                    <td><label for="experiment-edit-form-memory-limit">内存限制(Mib)</label></td>
+                    <td><input id="experiment-edit-form-memory-limit" name="memory_limit" type="number"
+                               placeholder="请输入内存限制"
+                               class="easyui-validatebox span2" style="width: 300px; height: 20px;"
+                               data-options="required:true" value="512"></td>
+                </tr>
+                <tr>
+                    <td><label for="experiment-edit-form-timeout">超时时间(s)</label></td>
+                    <td><input id="experiment-edit-form-timeout" name="timeout" type="number" placeholder="请输入超时时间"
+                               class="easyui-validatebox span2" style="width: 300px; height: 20px;"
+                               data-options="required:true" value="30"></td>
                 </tr>
                 <tr>
                     <td><label for="experiment-edit-form-status">状态</label></td>

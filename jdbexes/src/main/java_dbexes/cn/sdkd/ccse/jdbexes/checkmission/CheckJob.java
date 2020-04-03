@@ -1,7 +1,9 @@
 package cn.sdkd.ccse.jdbexes.checkmission;
 
+import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentFilesStuVO;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
+import cn.sdkd.ccse.jdbexes.service.IExperimentService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
@@ -27,37 +29,30 @@ public class CheckJob implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(CheckJob.class);
 
     DockerClient dockerClient;
-    String image_name;
 
-    private Long stuno; // 学生编号
-    private Long expno; // 实验编号
+    private final Long stuno; // 学生编号
+    private final Long expno; // 实验编号
 
-    private String sno;
-    private String sname;
+    private final String sno;
+    private final String sname;
 
-    private Integer timeout;
-    private Integer memory_limit;
+    private final IExperimentFilesStuService experimentFilesStuService;
+    private final IExperimentStuService experimentStuService;
+    private final IExperimentService experimentService;
 
-    private IExperimentFilesStuService experimentFilesStuService;
-    private IExperimentStuService experimentStuService;
-
-    public CheckJob(String dockerHost, String image_name, Long stuno, Long expno, String sno, String sname, Integer timeout,
-                    Integer memory_limit, IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService) {
+    public CheckJob(String dockerHost, Long stuno, Long expno, String sno, String sname,
+                    IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService, IExperimentService experimentService) {
 
         this.dockerClient = DockerClientBuilder.getInstance(dockerHost).build();
-        this.image_name = image_name;
 
         this.stuno = stuno;
         this.expno = expno;
         this.sno = sno;
         this.sname = sname;
 
-        this.timeout = timeout;
-        this.memory_limit = memory_limit;
-
         this.experimentFilesStuService = experimentFilesStuService;
         this.experimentStuService = experimentStuService;
-
+        this.experimentService = experimentService;
     }
 
     @Override
@@ -67,7 +62,12 @@ public class CheckJob implements Runnable {
         experimentStuService.updateStatusDesc(stuno, expno, -1, "测试中");
 
         List<ExperimentFilesStuVO> experimentFilesStuVOList = experimentFilesStuService.selectFilesLatest(this.stuno, this.expno);
-        String testTarget = experimentFilesStuVOList.get(0).getTesttarget();
+
+        Experiment experiment = experimentService.selectById(this.expno);
+        String image_name = experiment.getDocker_image();
+        String testTarget = experiment.getTesttarget();
+        long memory_limit = experiment.getMemory_limit() * 1024 * 1024;
+        int timeout = experiment.getTimeout();
 
         // Create container
         CreateContainerResponse container = dockerClient
@@ -75,7 +75,10 @@ public class CheckJob implements Runnable {
                 .withStdinOpen(true)
                 .exec();
 
-        dockerClient.updateContainerCmd(container.getId()).withMemory(memory_limit.longValue()).exec();
+        dockerClient.updateContainerCmd(container.getId())
+                .withMemory(memory_limit)
+                .withMemorySwap(memory_limit)
+                .exec();
 
         // Start container
         dockerClient.startContainerCmd(container.getId()).exec();
@@ -105,7 +108,7 @@ public class CheckJob implements Runnable {
         }
 
         // Run test
-        int code_test = runTest(container, testTarget);
+        int code_test = runTest(container, testTarget, timeout);
         switch (code_test) {
             case 0:
                 experimentStuService.updateStatusDesc(this.stuno, this.expno, 5, "通过");
@@ -207,7 +210,7 @@ public class CheckJob implements Runnable {
      * @param target    cmake 编译目标
      * @return 返回代码，-1 表示命令执行出错
      */
-    private int runTest(CreateContainerResponse container, String target) {
+    private int runTest(CreateContainerResponse container, String target, int timeout) {
         ExecCreateCmdResponse testExec = dockerClient.execCreateCmd(
                 container.getId())
                 .withAttachStdout(true)
@@ -217,7 +220,7 @@ public class CheckJob implements Runnable {
         OutputStream out = new ByteArrayOutputStream();
         try {
             dockerClient.execStartCmd(testExec.getId()).withDetach(false)
-                    .exec(new ExecStartResultCallback(out, out)).awaitCompletion(this.timeout, TimeUnit.SECONDS);
+                    .exec(new ExecStartResultCallback(out, out)).awaitCompletion(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             logger.warn(e.toString());
             return -1;
