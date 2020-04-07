@@ -45,13 +45,11 @@ public interface ExperimentStuTestMapper extends BaseMapper<ExperimentStuTest> {
             " order by testtime desc limit 0,1")
     ExperimentStuTest selectLatestByUserExperiment(@Param("stuno") Long stuno, @Param("expno") Long expno);
 
-    @Select(" select estl.experiment_stu_test_no, estl.expno, estl.stuno, testtime, testdesc, teststatus, simdesc, simstatus " +
-            " from experiment_stu_test est, experiment_stu_test_latest estl " +
-            " where est.experiment_stu_test_no = estl.experiment_stu_test_no and estl.expno = #{expno}")
+    @Select(" select max(experiment_stu_test_no) as experiment_stu_test_no, expno, stuno, max(testtime) as testtime, " +
+            "    null as testdesc, null as teststatus, null as simdesc, null as simstatus " +
+            " from experiment_stu_test " +
+            " where expno = #{expno} " +
+            " group by stuno, expno ")
     List<ExperimentStuTest> selectListLatestByExpno(@Param("expno") Long expno);
 
-    @Insert(" insert into experiment_stu_test_latest(stuno, expno, experiment_stu_test_no)" +
-            " value (#{stuno}, #{expno}, #{experiment_stu_test_no}) " +
-            " on duplicate key update experiment_stu_test_no = #{experiment_stu_test_no} ")
-    boolean insertLatestTest(@Param("stuno") Long stuno, @Param("expno") Long expno, @Param("experiment_stu_test_no") Long experiment_stu_test_no);
 }

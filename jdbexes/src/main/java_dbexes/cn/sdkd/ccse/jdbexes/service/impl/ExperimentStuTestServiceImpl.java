@@ -42,8 +42,4 @@ public class ExperimentStuTestServiceImpl extends ServiceImpl<ExperimentStuTestM
         return experimentStuTestMapper.selectListLatestByExpno(expno);
     }
 
-    @Override
-    public boolean insertLatestTest(Long stuno, Long expno, Long experiment_stu_test_no) {
-        return experimentStuTestMapper.insertLatestTest(stuno, expno, experiment_stu_test_no);
-    }
 }

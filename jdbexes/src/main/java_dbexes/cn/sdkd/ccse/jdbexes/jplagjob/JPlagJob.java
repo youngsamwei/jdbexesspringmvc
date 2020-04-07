@@ -127,9 +127,6 @@ public class JPlagJob implements Runnable {
         // 刷新 Submission 列表
         jPlagService.putSubmission(stuno, expno, submission);
 
-        // 更新用户最新实验
-        experimentStuTestService.insertLatestTest(stuno, expno, submissionKey.getExperiment_stu_test_no());
-
         // 将提交保存于 neo4j
         Assignment assignment = generateAssignment();
 
