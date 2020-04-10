@@ -333,8 +333,7 @@ public class JPlagServiceImpl implements IJPlagService {
 
         SubmissionKey submissionKey = new SubmissionKey(loginName, name, experiment_stu_test_no);
         JPlagJob jPlagJob = new JPlagJob(this, submissionKey, stuno, expno,
-                this.experimentStuService, this.experimentStuTestService,
-                this.assignmentRepository, this.similarityRepository,
+                this.experimentStuService, this.assignmentRepository, this.similarityRepository,
                 this.studentRepository, this.experimentRepository
         );
         threadPoolExecutor.execute(jPlagJob);

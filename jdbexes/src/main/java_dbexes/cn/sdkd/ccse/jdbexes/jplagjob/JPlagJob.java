@@ -34,7 +34,6 @@ public class JPlagJob implements Runnable {
     private SubmissionKey submissionKey;
     private IJPlagService jPlagService;
     private IExperimentStuService experimentStuService;
-    private IExperimentStuTestService experimentStuTestService;
 
     private IStudentRepository studentRepository;
     private IAssignmentRepository assignmentRepository;
@@ -44,9 +43,9 @@ public class JPlagJob implements Runnable {
     private Submission submission;
 
     public JPlagJob(IJPlagService jPlagService, SubmissionKey submissionKey, Long stuno, Long expno,
-                    IExperimentStuService experimentStuService, IExperimentStuTestService experimentStuTestService,
-                    IAssignmentRepository assignmentRepository, ISimilarityRepository similarityRepository,
-                    IStudentRepository studentRepository, IExperimentRepository experimentRepository) {
+                    IExperimentStuService experimentStuService, IAssignmentRepository assignmentRepository,
+                    ISimilarityRepository similarityRepository, IStudentRepository studentRepository,
+                    IExperimentRepository experimentRepository) {
         this.jPlagService = jPlagService;
         this.stuno = stuno;
         this.expno = expno;
@@ -56,7 +55,6 @@ public class JPlagJob implements Runnable {
         this.studentRepository = studentRepository;
         this.experimentRepository = experimentRepository;
         this.experimentStuService = experimentStuService;
-        this.experimentStuTestService = experimentStuTestService;
     }
 
     @Override

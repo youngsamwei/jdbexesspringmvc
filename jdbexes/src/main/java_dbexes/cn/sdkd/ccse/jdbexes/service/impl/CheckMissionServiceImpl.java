@@ -6,7 +6,6 @@ import cn.sdkd.ccse.jdbexes.service.ICheckMissionService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentFilesStuService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentService;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
-import com.wangzhixuan.model.vo.UserVo;
 import com.wangzhixuan.service.IUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,14 +58,10 @@ public class CheckMissionServiceImpl implements ICheckMissionService {
      */
     @Override
     public void submitJob(Long stuno, Long expno) {
-        UserVo u = userService.selectVoById(stuno);
-        String sno = u.getLoginName();
-        String sname = u.getName();
-
         String dockerHost = props.getProperty("docker.host");
 
         experimentStuService.updateStatusDesc(stuno, expno, -1, "未测试");
-        CheckJob cj = new CheckJob(dockerHost, stuno, expno, sno, sname,
+        CheckJob cj = new CheckJob(dockerHost, stuno, expno, userService,
                 experimentFilesStuService, experimentStuService, experimentService);
 
         threadPoolExecutor.execute(cj);

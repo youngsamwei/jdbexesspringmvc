@@ -11,6 +11,8 @@ import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectExecResponse;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
+import com.wangzhixuan.model.vo.UserVo;
+import com.wangzhixuan.service.IUserService;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,22 +35,19 @@ public class CheckJob implements Runnable {
     private final Long stuno; // 学生编号
     private final Long expno; // 实验编号
 
-    private final String sno;
-    private final String sname;
-
+    private final IUserService userService;
     private final IExperimentFilesStuService experimentFilesStuService;
     private final IExperimentStuService experimentStuService;
     private final IExperimentService experimentService;
 
-    public CheckJob(String dockerHost, Long stuno, Long expno, String sno, String sname,
+    public CheckJob(String dockerHost, Long stuno, Long expno, IUserService userService,
                     IExperimentFilesStuService experimentFilesStuService, IExperimentStuService experimentStuService, IExperimentService experimentService) {
 
         this.dockerClient = DockerClientBuilder.getInstance(dockerHost).build();
 
         this.stuno = stuno;
         this.expno = expno;
-        this.sno = sno;
-        this.sname = sname;
+        this.userService = userService;
 
         this.experimentFilesStuService = experimentFilesStuService;
         this.experimentStuService = experimentStuService;
@@ -57,6 +56,10 @@ public class CheckJob implements Runnable {
 
     @Override
     public void run() {
+
+        UserVo u = userService.selectVoById(stuno);
+        String sno = u.getLoginName();
+        String sname = u.getName();
         logger.info("Running test for (" + sno + ", " + sname + ").");
 
         experimentStuService.updateStatusDesc(stuno, expno, -1, "测试中");
