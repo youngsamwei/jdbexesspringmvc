@@ -33,4 +33,10 @@ public interface INeo4jService {
     List<Student> findStudentBySimValueAssignmentid(float sim, long id);
 
     Assignment findAssignmentByExperimentStuTestNo(long experiment_stu_test_no);
+
+    Assignment generateStudentAssignment(long stuno, long expno, long experiment_stu_test_no);
+
+    List<Similarity> findSimilarityBy2Assignment(long assignmentid1, long assignmentid2);
+
+    Similarity createSimilarity(long assignmentid1, long assignmentid2, float sim);
 }

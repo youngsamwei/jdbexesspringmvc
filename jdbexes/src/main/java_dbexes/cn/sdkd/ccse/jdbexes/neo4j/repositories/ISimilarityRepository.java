@@ -15,7 +15,7 @@ import java.util.List;
 public interface ISimilarityRepository extends GraphRepository<Similarity> {
     /*查询两个测试之间的相似度联系*/
     @Query("MATCH (a1:Assignment {assignmentid:{0}})-[r:SIMILARITY]-(a2:Assignment {assignmentid:{1}}) RETURN r, a1, a2")
-    List<Similarity> findSimilarityBy2ExperimentStuTestNo(Long experimentStuTestNoA, Long experimentStuTestNoB);
+    List<Similarity> findSimilarityBy2Assignmentid(Long assignmentid1, Long assignmentid2);
 
     /*建立两个测试之间的相似度联系*/
     @Query("MATCH (a1:Assignment {assignmentid:{0}}),(a2:Assignment {assignmentid:{1}}) " +

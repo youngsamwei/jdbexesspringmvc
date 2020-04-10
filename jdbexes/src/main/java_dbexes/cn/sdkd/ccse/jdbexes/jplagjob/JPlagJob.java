@@ -1,24 +1,16 @@
 package cn.sdkd.ccse.jdbexes.jplagjob;
 
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Assignment;
-import cn.sdkd.ccse.jdbexes.neo4j.entities.Experiment;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.Student;
 import cn.sdkd.ccse.jdbexes.neo4j.entities.relationships.Similarity;
-import cn.sdkd.ccse.jdbexes.neo4j.repositories.IAssignmentRepository;
-import cn.sdkd.ccse.jdbexes.neo4j.repositories.IExperimentRepository;
-import cn.sdkd.ccse.jdbexes.neo4j.repositories.ISimilarityRepository;
-import cn.sdkd.ccse.jdbexes.neo4j.repositories.IStudentRepository;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
-import cn.sdkd.ccse.jdbexes.service.IExperimentStuTestService;
 import cn.sdkd.ccse.jdbexes.service.IJPlagService;
+import cn.sdkd.ccse.jdbexes.service.INeo4jService;
 import jplag.ExitException;
 import jplag.Submission;
-import org.neo4j.ogm.annotation.typeconversion.DateString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -34,27 +26,18 @@ public class JPlagJob implements Runnable {
     private SubmissionKey submissionKey;
     private IJPlagService jPlagService;
     private IExperimentStuService experimentStuService;
-
-    private IStudentRepository studentRepository;
-    private IAssignmentRepository assignmentRepository;
-    private ISimilarityRepository similarityRepository;
-    private IExperimentRepository experimentRepository;
+    private INeo4jService neo4jService;
 
     private Submission submission;
 
     public JPlagJob(IJPlagService jPlagService, SubmissionKey submissionKey, Long stuno, Long expno,
-                    IExperimentStuService experimentStuService, IAssignmentRepository assignmentRepository,
-                    ISimilarityRepository similarityRepository, IStudentRepository studentRepository,
-                    IExperimentRepository experimentRepository) {
+                    IExperimentStuService experimentStuService, INeo4jService neo4jService) {
         this.jPlagService = jPlagService;
         this.stuno = stuno;
         this.expno = expno;
         this.submissionKey = submissionKey;
-        this.assignmentRepository = assignmentRepository;
-        this.similarityRepository = similarityRepository;
-        this.studentRepository = studentRepository;
-        this.experimentRepository = experimentRepository;
         this.experimentStuService = experimentStuService;
+        this.neo4jService = neo4jService;
     }
 
     @Override
@@ -126,7 +109,7 @@ public class JPlagJob implements Runnable {
         jPlagService.putSubmission(stuno, expno, submission);
 
         // 将提交保存于 neo4j
-        Assignment assignment = generateAssignment();
+        Assignment assignment = neo4jService.generateStudentAssignment(stuno, expno, submissionKey.getExperiment_stu_test_no());
 
         // 在 Neo4J 中创建边
         for (Map.Entry<SubmissionKey, Float> result : simResultMap.entrySet()) {
@@ -139,7 +122,7 @@ public class JPlagJob implements Runnable {
     }
 
     private int getSimStatus(Assignment assignment) {
-        List<Student> students = studentRepository.findBySimValueAssignmentid(SIM_THRESHOLD, assignment.getId());
+        List<Student> students = neo4jService.findStudentBySimValueAssignmentid(SIM_THRESHOLD, assignment.getId());
         return students.size();
     }
 
@@ -152,25 +135,24 @@ public class JPlagJob implements Runnable {
      */
     private void createEdgeIfNotExist(SubmissionKey key1, SubmissionKey key2, float sim) {
         // 存在则返回
-        List<Similarity> sims = similarityRepository.findSimilarityBy2ExperimentStuTestNo(
+        List<Similarity> sims = neo4jService.findSimilarityBy2Assignment(
                 key1.getExperiment_stu_test_no(), key2.getExperiment_stu_test_no());
         if (!sims.isEmpty()) {
             return;
         }
 
-        Assignment a1 = assignmentRepository.findByAssignmentid(key1.getExperiment_stu_test_no());
-        Assignment a2 = assignmentRepository.findByAssignmentid(key2.getExperiment_stu_test_no());
+        Assignment a1 = neo4jService.findAssignmentByExperimentStuTestNo(key1.getExperiment_stu_test_no());
+        Assignment a2 = neo4jService.findAssignmentByExperimentStuTestNo(key2.getExperiment_stu_test_no());
         if (a1 == null || a2 == null) {
             return;
         }
 
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat(DateString.ISO_8601);
             if (a1.getSubmitDate().after(a2.getSubmitDate())) {
-                similarityRepository.createSimilarity(key1.getExperiment_stu_test_no(), key2.getExperiment_stu_test_no(), sdf.format(new Date()), sim);
+                neo4jService.createSimilarity(key1.getExperiment_stu_test_no(), key2.getExperiment_stu_test_no(), sim);
                 logger.debug("creating edge " + key1 + " -> " + key2 + ", " + sim);
             } else {
-                similarityRepository.createSimilarity(key2.getExperiment_stu_test_no(), key1.getExperiment_stu_test_no(), sdf.format(new Date()), sim);
+                neo4jService.createSimilarity(key2.getExperiment_stu_test_no(), key1.getExperiment_stu_test_no(), sim);
                 logger.debug("creating edge " + key2 + " <- " + key1 + ", " + sim);
             }
         } catch (Exception e) {
@@ -178,25 +160,8 @@ public class JPlagJob implements Runnable {
         }
     }
 
-    /**
-     * 创建一次提交
-     * @return assignment
-     */
-    private Assignment generateAssignment() throws NullPointerException {
-        Assignment a1 = new Assignment();
-        a1.setAssignmentid(submissionKey.getExperiment_stu_test_no());
-        a1.setSubmitDate(new Date());
-        a1 = assignmentRepository.save(a1);
-        Student s = studentRepository.findByStudentid(stuno);
-        Experiment e = experimentRepository.findByExperimentid(expno);
-
-        assignmentRepository.createSubmitRelationship(s.getId(), a1.getId());
-        assignmentRepository.createBelongtoRelationship(e.getId(), a1.getId());
-        return a1;
-    }
-
     private boolean assignmentAlreadyExists() {
-        Assignment a1 = assignmentRepository.findByAssignmentid(submissionKey.getExperiment_stu_test_no());
+        Assignment a1 = neo4jService.findAssignmentByExperimentStuTestNo(submissionKey.getExperiment_stu_test_no());
         return a1 != null;
     }
 
