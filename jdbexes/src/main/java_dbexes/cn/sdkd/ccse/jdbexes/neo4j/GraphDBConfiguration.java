@@ -41,7 +41,7 @@ public class GraphDBConfiguration extends Neo4jConfiguration {
       // driver. Then we can horizontally scale neo4j
       config.driverConfiguration()
             .setDriverClassName("org.neo4j.ogm.drivers.embedded.driver.EmbeddedDriver")
-            .setURI("file:/" + props.get("neo4j.sdn.jdbexes.graph.db"));
+            .setURI(props.getProperty("neo4j.sdn.jdbexes.graph.db"));
       return config;
    }
 

@@ -62,6 +62,12 @@
         where expno = #{expno} and stuno = #{stuno}
     </update>
 
+    <update id="updateCheckLog">
+        insert into experiment_stu_test_log(expno, stuno, content)
+        value (#{expno}, #{stuno}, #{content})
+        on duplicate key update content = #{content}
+    </update>
+
     <update id="refreshCache" flushCache="true">
         select 1
     </update>

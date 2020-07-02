@@ -14,6 +14,8 @@ import com.wangzhixuan.model.vo.UserVo;
  */
 public interface IUserService extends IService<User> {
 
+    List<User> selectAllStudent();
+
     List<User> selectByLoginName(UserVo userVo);
 
     void insertByVo(UserVo userVo);
@@ -27,4 +29,6 @@ public interface IUserService extends IService<User> {
     void selectDataGrid(PageInfo pageInfo);
 
     void deleteUserById(Long id);
+
+    List<User> selectStudentByOrganizationId(Long organization_id);
 }

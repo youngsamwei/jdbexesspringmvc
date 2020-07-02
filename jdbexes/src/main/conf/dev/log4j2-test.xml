@@ -24,6 +24,7 @@
         <logger name="com.baomidou.mybatisplus" level="INFO"/>
         <logger name="org.apache.ibatis.io" level="INFO"/>
         <logger name="org.apache.velocity" level="INFO"/>
+        <logger name="cn.sdkd.ccse.jdbexes.mapper" level="INFO"/>
         <!-- cache INFO -->
         <logger name="net.sf.ehcache" level="INFO"/>
         <logger name="org.springframework.cache" level="INFO"/>
@@ -34,9 +35,9 @@
         <!-- 业务debug日志 -->
         <logger name="com.wangzhixuan" level="WARN"/>
 
-        <logger name="cn.sdkd.ccse.jdbexes" level="INFO"/>
+        <logger name="cn.sdkd.ccse.jdbexes" level="DEBUG"/>
         <logger name="cn.sdkd.ccse.commons.utils" level="DEBUG"/>
-        <logger name="cn.sdkd.ccse.jdbexes.service.impl.JPlagJob" level="DEBUG"/>
+        <logger name="cn.sdkd.ccse.jdbexes.jplagjob.JPlagJob" level="DEBUG"/>
         
         <Root level="info">
             <AppenderRef ref="Console" />

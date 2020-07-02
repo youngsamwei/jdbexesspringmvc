@@ -3,9 +3,8 @@ package cn.sdkd.ccse.jdbexes.service.impl;
 
 import cn.sdkd.ccse.jdbexes.mapper.ExperimentMapper;
 import cn.sdkd.ccse.jdbexes.mapper.ExperimentStuMapper;
-import cn.sdkd.ccse.jdbexes.model.Experiment;
 import cn.sdkd.ccse.jdbexes.model.ExperimentStu;
-import cn.sdkd.ccse.jdbexes.service.IExperimentService;
+import cn.sdkd.ccse.jdbexes.model.ExperimentStuTestLog;
 import cn.sdkd.ccse.jdbexes.service.IExperimentStuService;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -62,6 +60,18 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
     @Override
     public boolean updateSimStatus(Long stuno, Long expno, Integer simstatus, String simdesc) {
         return experimentStuMapper.updateSimStatus(stuno, expno, simstatus, simdesc);
+    }
+
+    @Override
+    public boolean updateCheckLog(Long stuno, Long expno, String content) {
+        return experimentStuMapper.updateCheckLog(stuno, expno, content);
+    }
+
+    @Override
+    public String getCheckLog(Long stuno, Long expno) {
+        ExperimentStuTestLog log = experimentStuMapper.selectCheckLog(stuno, expno);
+        if (log == null) return "none";
+        return log.getContent();
     }
 
     @Override
@@ -131,5 +141,9 @@ public class ExperimentStuServiceImpl extends ServiceImpl<ExperimentStuMapper, E
         return experimentStuMapper.refreshCache();
     }
 
-    ;
+    @Override
+    public ExperimentStu selectByStunoExpno(Long stuno, Long expno) {
+        return experimentStuMapper.selectByStunoExpno(stuno, expno);
+    }
+
 }

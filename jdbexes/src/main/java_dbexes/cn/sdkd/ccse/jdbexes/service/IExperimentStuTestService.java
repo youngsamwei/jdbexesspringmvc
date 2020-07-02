@@ -16,4 +16,9 @@ public interface IExperimentStuTestService extends IService<ExperimentStuTest> {
 
     /*查询未计算相似度的提交*/
     List<ExperimentStuTest> selectListUnCompare();
+
+    ExperimentStuTest findLatestByUserExperiment(Long stuno, Long expno);
+
+    List<ExperimentStuTest> findLatestByExpno(Long expno);
+
 }
